@@ -29,7 +29,7 @@ const ProfileScreen = () => {
         />
         <Text style={styles.userName}>{user?.email}</Text>
         <View style={styles.iconContainer}>
-          <TouchableOpacity onPress={() => Alert.alert("QR Scanner will open here.")}> 
+        <TouchableOpacity onPress={() => Alert.alert("QR Scanner will open here.")}> 
             <FontAwesome name="qrcode" size={30} color="black" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate("Settings")}> 
@@ -61,8 +61,7 @@ const styles = StyleSheet.create({
   },
   profileContainer: {
     alignItems: "center",
-    marginBottom: 50,  
-    
+    marginBottom: 30,
   },
   profilePhoto: {
     width: 100,
