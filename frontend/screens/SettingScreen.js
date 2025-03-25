@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import { auth } from "../backend/config"; // Если используете Firebase для аутентификации
-import { signOut } from "firebase/auth"; // Для выхода
+import { auth } from "../backend/config"; 
+import { signOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth"; 
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const [user, setUser] = useState(null);
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     const loadUser = async () => {
@@ -27,19 +28,46 @@ const SettingsScreen = () => {
     navigation.replace("Login");
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
+    if (!auth.currentUser) return;
+
     Alert.alert(
       "Delete Account",
-      "Are you sure you want to delete your account?",
+      "For security reasons, please enter your password to delete your account.",
       [
-        { text: "Cancel" },
-        { text: "Delete", onPress: () => { /* Add account deletion logic here */ } }
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Continue",
+          onPress: () => showPasswordPrompt()
+        }
       ]
     );
   };
 
-  const handleChangePassword = () => {
-    navigation.navigate("ChangePassword"); // Переход к экрану смены пароля
+  const showPasswordPrompt = () => {
+    Alert.prompt(
+      "Re-authenticate",
+      "Enter your password to confirm account deletion.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", onPress: (password) => reauthenticateAndDelete(password) }
+      ],
+      "secure-text"
+    );
+  };
+
+  const reauthenticateAndDelete = async (password) => {
+    const user = auth.currentUser;
+    const credential = EmailAuthProvider.credential(user.email, password);
+
+    try {
+      await reauthenticateWithCredential(user, credential);
+      await deleteUser(user);
+      await AsyncStorage.removeItem("user");
+      navigation.replace("Login");
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
   };
 
   return (
@@ -51,7 +79,7 @@ const SettingsScreen = () => {
         <Text style={styles.optionValue}>{user?.email}</Text>
       </View>
 
-      <TouchableOpacity style={styles.option} onPress={handleChangePassword}>
+      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("ChangePassword")}>
         <Text style={styles.optionText}>Change Password</Text>
       </TouchableOpacity>
 
@@ -67,8 +95,8 @@ const SettingsScreen = () => {
         <Text style={styles.optionText}>Privacy Policy</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.option} onPress={handleDeleteAccount}>
-        <Text style={styles.optionText}>Delete Account</Text>
+      <TouchableOpacity style={styles.deleteOption} onPress={handleDeleteAccount}>
+        <Text style={styles.deleteText}>Delete Account</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.option} onPress={handleLogout}>
@@ -110,6 +138,17 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  deleteOption: {
+    padding: 15,
+    backgroundColor: "#f5f5f5",
+    marginVertical: 5,
+    borderRadius: 5,
+  },
+  deleteText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "red",
   },
 });
 

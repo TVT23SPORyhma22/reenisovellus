@@ -3,16 +3,20 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from "react-na
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { FontAwesome } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const [user, setUser] = useState(null);
+  const [profilePhoto, setProfilePhoto] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
       const storedUser = await AsyncStorage.getItem("user");
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setProfilePhoto(parsedUser.photoURL);
       } else {
         navigation.replace("Login");
       }
@@ -20,16 +24,70 @@ const ProfileScreen = () => {
     loadUser();
   }, []);
 
+  const changeProfilePhoto = () => {
+    Alert.alert(
+      "Change Profile Photo",
+      "Choose an option",
+      [
+        { text: "Take Photo", onPress: () => pickImage("camera") },
+        { text: "Choose from Gallery", onPress: () => pickImage("gallery") },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
+  const pickImage = async (source) => {
+    // Запрос разрешений
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Denied", "You need to grant permission to use this feature.");
+      return;
+    }
+
+    let result;
+    if (source === "camera") {
+      const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraStatus.status !== "granted") {
+        Alert.alert("Permission Denied", "You need to grant camera access.");
+        return;
+      }
+      result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 1,
+      });
+    } else {
+      result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        quality: 1,
+      });
+    }
+
+    if (!result.canceled) {
+      setProfilePhoto(result.assets[0].uri);
+      savePhotoToStorage(result.assets[0].uri);
+    }
+  };
+
+  const savePhotoToStorage = async (photoUri) => {
+    if (user) {
+      const updatedUser = { ...user, photoURL: photoUri };
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.profileContainer}>
-        <Image 
-          source={user?.photoURL ? { uri: user.photoURL } : require("../assets/default-profile.png")}
-          style={styles.profilePhoto}
-        />
+        <TouchableOpacity onLongPress={changeProfilePhoto}>
+          <Image 
+            source={profilePhoto ? { uri: profilePhoto } : require("../assets/default-profile.png")}
+            style={styles.profilePhoto}
+          />
+        </TouchableOpacity>
         <Text style={styles.userName}>{user?.email}</Text>
         <View style={styles.iconContainer}>
-        <TouchableOpacity onPress={() => Alert.alert("QR Scanner will open here.")}> 
+          <TouchableOpacity onPress={() => Alert.alert("QR Scanner will open here.")}> 
             <FontAwesome name="qrcode" size={30} color="black" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate("Settings")}> 
@@ -64,9 +122,9 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   profilePhoto: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     marginBottom: 10,
   },
   userName: {
