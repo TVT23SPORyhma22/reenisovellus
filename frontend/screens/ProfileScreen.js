@@ -12,13 +12,18 @@ const ProfileScreen = () => {
 
   useEffect(() => {
     const loadUser = async () => {
-      const storedUser = await AsyncStorage.getItem("user");
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setProfilePhoto(parsedUser.photoURL);
-      } else {
-        navigation.replace("Login");
+      try {
+        const storedUser = await AsyncStorage.getItem("user");
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          console.log("Loaded user from storage:", parsedUser);  // Отладочное сообщение
+          setUser(parsedUser);
+          setProfilePhoto(parsedUser.photoURL);
+        } else {
+          navigation.replace("Login");
+        }
+      } catch (error) {
+        console.error("Error loading user from AsyncStorage:", error);  // Обработка ошибок
       }
     };
     loadUser();
@@ -37,7 +42,6 @@ const ProfileScreen = () => {
   };
 
   const pickImage = async (source) => {
-    // Запрос разрешений
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Permission Denied", "You need to grant permission to use this feature.");
@@ -71,6 +75,7 @@ const ProfileScreen = () => {
   const savePhotoToStorage = async (photoUri) => {
     if (user) {
       const updatedUser = { ...user, photoURL: photoUri };
+      console.log("Saving photo to storage:", updatedUser);  // Отладочное сообщение
       await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
     }
@@ -128,30 +133,30 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   userName: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 30,
+    fontWeight: "italic",
     marginBottom: 10,
   },
   iconContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: 120,
-    marginTop: 10,
+    width: 170,
+    marginTop: 40,
   },
   menuContainer: {
     width: "100%",
-    marginTop: 20,
+    marginTop: 150,
   },
   menuItem: {
     padding: 15,
     backgroundColor: "#f5f5f5",
     marginVertical: 5,
     borderRadius: 5,
-    alignItems: "center",
+    alignItems: "left",
   },
   menuText: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 25,
+    fontWeight: "semi bold",
   },
 });
 

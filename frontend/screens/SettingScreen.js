@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import { auth } from "../backend/config"; 
-import { signOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth"; 
+import { auth } from "../backend/config";
+import { signOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "firebase/auth";
+import { FontAwesome } from "@expo/vector-icons";
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const [user, setUser] = useState(null);
-  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -36,35 +38,21 @@ const SettingsScreen = () => {
       "For security reasons, please enter your password to delete your account.",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Continue",
-          onPress: () => showPasswordPrompt()
-        }
+        { text: "Continue", onPress: () => showPasswordPrompt() }
       ]
     );
   };
 
-  const showPasswordPrompt = () => {
-    Alert.prompt(
-      "Re-authenticate",
-      "Enter your password to confirm account deletion.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: (password) => reauthenticateAndDelete(password) }
-      ],
-      "secure-text"
-    );
-  };
-
-  const reauthenticateAndDelete = async (password) => {
-    const user = auth.currentUser;
-    const credential = EmailAuthProvider.credential(user.email, password);
-
+  const handleChangePassword = async () => {
+    if (!auth.currentUser || newPassword.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long.");
+      return;
+    }
     try {
-      await reauthenticateWithCredential(user, credential);
-      await deleteUser(user);
-      await AsyncStorage.removeItem("user");
-      navigation.replace("Login");
+      await updatePassword(auth.currentUser, newPassword);
+      Alert.alert("Success", "Password updated successfully.");
+      setNewPassword("");
+      setShowPasswordChange(false);
     } catch (error) {
       Alert.alert("Error", error.message);
     }
@@ -72,35 +60,53 @@ const SettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Settings</Text>
 
       <View style={styles.optionContainer}>
-        <Text style={styles.optionTitle}>Email:</Text>
+        <Text style={styles.optionTitle}>Email</Text>
         <Text style={styles.optionValue}>{user?.email}</Text>
       </View>
 
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("ChangePassword")}>
+      <TouchableOpacity style={styles.option} onPress={() => setShowPasswordChange(!showPasswordChange)}>        
         <Text style={styles.optionText}>Change Password</Text>
+        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("UnitsOfMeasure")}>
+      {showPasswordChange && (
+        <View style={styles.changePasswordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="New Password"
+            secureTextEntry
+            value={newPassword}
+            onChangeText={setNewPassword}
+          />
+          <TouchableOpacity style={styles.changePasswordButton} onPress={handleChangePassword}>
+            <Text style={styles.changePasswordText}>Update Password</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("UnitsOfMeasure")}>        
         <Text style={styles.optionText}>Units of Measure</Text>
+        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("CountryRegion")}>
+      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("CountryRegion")}>        
         <Text style={styles.optionText}>Country/Region</Text>
+        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("PrivacyPolicy")}>
+      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("PrivacyPolicy")}>        
         <Text style={styles.optionText}>Privacy Policy</Text>
+        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.deleteOption} onPress={handleDeleteAccount}>
+      <TouchableOpacity style={styles.option} onPress={handleDeleteAccount}>        
         <Text style={styles.deleteText}>Delete Account</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.option} onPress={handleLogout}>
-        <Text style={styles.optionText}>Log Out</Text>
+      <TouchableOpacity style={styles.logoutOption} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
     </View>
   );
@@ -110,45 +116,79 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: "#fff",
   },
-  header: {
-    fontSize: 30,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginVertical: 20,
-  },
-  optionContainer: {
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
   },
-  optionTitle: {
-    fontSize: 18,
+  header: {
+    fontSize: 24,
     fontWeight: "bold",
+  },
+  optionContainer: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  optionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#555",
   },
   optionValue: {
     fontSize: 16,
     color: "gray",
+  },
+  changePasswordContainer: {
+    paddingVertical: 15,
+  },
+  passwordInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+    padding: 10,
+    fontSize: 16,
     marginBottom: 10,
   },
-  option: {
-    padding: 15,
-    backgroundColor: "#f5f5f5",
-    marginVertical: 5,
+  changePasswordButton: {
+    backgroundColor: "#A0716C",
+    padding: 10,
     borderRadius: 5,
+    alignItems: "center",
+  },
+  changePasswordText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  option: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
   },
   optionText: {
     fontSize: 16,
-    fontWeight: "bold",
-  },
-  deleteOption: {
-    padding: 15,
-    backgroundColor: "#f5f5f5",
-    marginVertical: 5,
-    borderRadius: 5,
   },
   deleteText: {
     fontSize: 16,
-    fontWeight: "bold",
+  },
+  logoutOption: {
+    marginTop: 20,
+  },
+  logoutText: {
+    fontSize: 16,
     color: "red",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+  arrowIcon: {
+    marginLeft: "auto",
   },
 });
 
