@@ -83,6 +83,10 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <FontAwesome name="chevron-left" size={30} color="black" style={styles.arrowIcon} />
+      </TouchableOpacity>
+
       <View style={styles.profileContainer}>
         <TouchableOpacity onLongPress={changeProfilePhoto}>
           <Image 
@@ -121,6 +125,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,  
+    left: 10,
+    padding: 10,
   },
   profileContainer: {
     alignItems: "center",

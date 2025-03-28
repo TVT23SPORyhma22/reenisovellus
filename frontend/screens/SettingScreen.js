@@ -30,6 +30,38 @@ const SettingsScreen = () => {
     navigation.replace("Login");
   };
 
+  const showPasswordPrompt = () => {
+    Alert.prompt(
+      "Confirm Password",
+      "Enter your password to delete your account",
+      async (password) => {
+        if (!password) {
+          Alert.alert("Error", "Password cannot be empty.");
+          return;
+        }
+
+        const user = auth.currentUser;
+        if (!user || !user.email) {
+          Alert.alert("Error", "User not authenticated.");
+          return;
+        }
+
+        const credential = EmailAuthProvider.credential(user.email, password);
+
+        try {
+          await reauthenticateWithCredential(user, credential);
+          await deleteUser(user);
+          await AsyncStorage.removeItem("user");
+          navigation.replace("Login");
+          Alert.alert("Success", "Account deleted successfully.");
+        } catch (error) {
+          Alert.alert("Error", error.message);
+        }
+      },
+      "secure-text"
+    );
+  };
+
   const handleDeleteAccount = async () => {
     if (!auth.currentUser) return;
 
@@ -61,53 +93,56 @@ const SettingsScreen = () => {
   return (
     <View style={styles.container}>
 
-      <View style={styles.optionContainer}>
-        <Text style={styles.optionTitle}>Email</Text>
-        <Text style={styles.optionValue}>{user?.email}</Text>
-      </View>
-
-      <TouchableOpacity style={styles.option} onPress={() => setShowPasswordChange(!showPasswordChange)}>        
-        <Text style={styles.optionText}>Change Password</Text>
-        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <FontAwesome name="chevron-left" size={30} color="black" style={styles.arrowIcon} />
       </TouchableOpacity>
 
-      {showPasswordChange && (
-        <View style={styles.changePasswordContainer}>
-          <TextInput
-            style={styles.passwordInput}
-            placeholder="New Password"
-            secureTextEntry
-            value={newPassword}
-            onChangeText={setNewPassword}
-          />
-          <TouchableOpacity style={styles.changePasswordButton} onPress={handleChangePassword}>
-            <Text style={styles.changePasswordText}>Update Password</Text>
-          </TouchableOpacity>
+      <View style={styles.optionsContainer}>
+        <View style={styles.optionContainer}>
+          <Text style={styles.optionTitle}>Email</Text>
+          <Text style={styles.optionValue}>{user?.email}</Text>
         </View>
-      )}
 
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("UnitsOfMeasure")}>        
-        <Text style={styles.optionText}>Units of Measure</Text>
-        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.option} onPress={() => setShowPasswordChange(!showPasswordChange)}>
+          <Text style={styles.optionText}>Change Password</Text>
+          <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("CountryRegion")}>        
-        <Text style={styles.optionText}>Country/Region</Text>
-        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
-      </TouchableOpacity>
+        {showPasswordChange && (
+          <View style={styles.changePasswordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="New Password"
+              secureTextEntry
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
+            <TouchableOpacity style={styles.changePasswordButton} onPress={handleChangePassword}>
+              <Text style={styles.changePasswordText}>Update Password</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("PrivacyPolicy")}>        
-        <Text style={styles.optionText}>Privacy Policy</Text>
-        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("UnitsOfMeasure")}>
+          <Text style={styles.optionText}>Units of Measure</Text>
+          <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.option} onPress={handleDeleteAccount}>        
-        <Text style={styles.deleteText}>Delete Account</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("CountryRegion")}>
+          <Text style={styles.optionText}>Country/Region</Text>
+          <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutOption} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("PrivacyPolicy")}>
+          <Text style={styles.optionText}>Privacy Policy</Text>
+          <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.option} onPress={handleDeleteAccount}>
+          <Text style={styles.deleteText}>Delete Account</Text>
+        </TouchableOpacity>
+
+      </View>
     </View>
   );
 };
@@ -115,18 +150,20 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#fff",
   },
-  headerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
+  backButton: {
+    position: "absolute",
+    top: 50,  
+    left: 10,
+    padding: 10,
   },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
+  arrowIcon: {
+    marginLeft: "auto", 
+  },
+  optionsContainer: {
+    marginTop: 80,  
+    padding: 20,
   },
   optionContainer: {
     paddingVertical: 10,
@@ -177,6 +214,8 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontSize: 16,
+    color: "red",
+    fontWeight: "bold",
   },
   logoutOption: {
     marginTop: 20,
@@ -186,9 +225,6 @@ const styles = StyleSheet.create({
     color: "red",
     textAlign: "center",
     fontWeight: "bold",
-  },
-  arrowIcon: {
-    marginLeft: "auto",
   },
 });
 
