@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { View, TextInput, Button, Text } from "react-native";
+import { View, TextInput, Button, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../backend/config"; 
-
+import { SafeAreaView } from "react-native-safe-area-context";
 console.log("Firebase Auth:", auth); // debugging
 
 const LoginScreen = ({ navigation }) => {
@@ -51,24 +51,51 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <View>
-      <TextInput 
-        placeholder="Email" 
-        value={email} 
-        onChangeText={setEmail} 
-        keyboardType="email-address" 
-      />
-      <TextInput 
-        placeholder="Password" 
-        value={password} 
-        secureTextEntry 
-        onChangeText={setPassword} 
-      />
-      {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
-      <Button title="Login" onPress={handleLogin} />
-      <Button title="Register" onPress={() => navigation.navigate("Register")} />
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.innerContainer}>
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          secureTextEntry
+          onChangeText={setPassword}
+          style={styles.input}
+        />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <Button title="Login" onPress={handleLogin} />
+        <Button title="Register" onPress={() => navigation.navigate("Register")} />
+      </View>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  innerContainer: {
+    alignItems: "center",
+  },
+  input: {
+    width: "100%",
+    padding: 10,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+  },
+  errorText: {
+    color: "red",
+    marginBottom: 10,
+  },
+});
 
 export default LoginScreen;
