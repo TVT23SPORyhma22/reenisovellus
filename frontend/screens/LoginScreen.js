@@ -3,7 +3,7 @@ import { View, TextInput, Button, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../backend/config"; 
-
+import { SafeAreaView } from "react-native-safe-area-context";
 console.log("Firebase Auth:", auth); // debugging
 
 const LoginScreen = ({ navigation }) => {
@@ -51,6 +51,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
+
     <View style={styles.container}>
     <Text style={styles.title}>Welcome Back</Text>
     <Text style={styles.subtitle}>Log in to continue</Text>
@@ -73,6 +74,8 @@ const LoginScreen = ({ navigation }) => {
       <Button title="Login" onPress={handleLogin} />
       <Button title="Register" onPress={() => navigation.navigate("Register")} />
     </View>
+
+
   );
 };
 
@@ -80,6 +83,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
+
     alignItems: "center",
     backgroundColor: "#f8f9fa",
     padding: 20,
@@ -129,6 +133,9 @@ const styles = StyleSheet.create({
     marginTop: 15,
     color: "#007bff",
     fontSize: 16,
+
+
+
   },
 });
 

@@ -1,9 +1,9 @@
 
 // rekisteröinti, ei käyttäjälle
 import React, { useState } from "react";
-import { View, TextInput, Button, Text } from "react-native";
+import { View, TextInput, Button, Text, StyleSheet } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-
+import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "../backend/config"; 
 
 const RegisterScreen = ({ navigation }) => {
@@ -36,19 +36,50 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <View>
-      <TextInput placeholder="Email" value={email} onChangeText={setEmail} />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        secureTextEntry
-        onChangeText={setPassword}
-      />
-      {error ? <Text>{error}</Text> : null}
-      <Button title="Register" onPress={handleRegister} />
-      <Button title="Back to Login" onPress={() => navigation.navigate("Login")} />
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.innerContainer}>
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          secureTextEntry
+          onChangeText={setPassword}
+          style={styles.input}
+        />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <Button title="Register" onPress={handleRegister} />
+        <Button title="Back to Login" onPress={() => navigation.navigate("Login")} />
+      </View>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  innerContainer: {
+    alignItems: "center",
+  },
+  input: {
+    width: "100%",
+    padding: 10,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+  },
+  errorText: {
+    color: "red",
+    marginBottom: 10,
+  },
+});
 
 export default RegisterScreen;

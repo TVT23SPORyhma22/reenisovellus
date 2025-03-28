@@ -1,11 +1,14 @@
 // komponentti uuden harjoituksen lisäämiseen
 
 import React, { useState } from "react";
+import { getAuth } from "firebase/auth";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../backend/config";
 
-const ExerciseForm = ({ userId, onExerciseAdded }) => {
+const auth = getAuth();
+
+const ExerciseForm = ({ onExerciseAdded }) => {
   const [exerciseName, setExerciseName] = useState("");
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
@@ -18,33 +21,37 @@ const ExerciseForm = ({ userId, onExerciseAdded }) => {
     setWeight("");
   };
 
-const handleSubmit = async () => {
-  // pakollisena exercise, set ja rep
-    if (!exerciseName || !sets || !reps) {
-      Alert.alert("Error", "Please fill all required fields");
+  const handleSubmit = async () => {
+    // pakollisena exercise, set ja rep
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Error", "You must be logged in to add exercises.");
       return;
     }
-  
+    // required fields
+    if (!exerciseName || !sets || !reps) {
+      Alert.alert("Error", "Please fill all required fields.");
+      return;
+    }
+
     try {
       const exercisesRef = collection(db, "exercises");
-      
+
       await addDoc(exercisesRef, {
         name: exerciseName,
         sets: parseInt(sets),
         reps: parseInt(reps),
         weight: weight ? parseFloat(weight) : 0,
-        userId: userId,
-        createdAt: serverTimestamp()
+        userId: user.uid, // hakee userId Firebase Authin kautta
+        createdAt: serverTimestamp(),
       });
-  
+
       resetForm();
-      
       Alert.alert("Success", "Exercise added successfully!");
-      
+
       if (onExerciseAdded) {
         onExerciseAdded();
       }
-      
     } catch (error) {
       console.error("Error adding exercise: ", error);
       Alert.alert("Error", "Failed to add exercise");
