@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { auth } from "../backend/config";
@@ -11,6 +11,8 @@ const SettingsScreen = () => {
   const [user, setUser] = useState(null);
   const [newPassword, setNewPassword] = useState("");
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [passwordForDelete, setPasswordForDelete] = useState("");
 
   useEffect(() => {
     const loadUser = async () => {
@@ -30,49 +32,34 @@ const SettingsScreen = () => {
     navigation.replace("Login");
   };
 
-  const showPasswordPrompt = () => {
-    Alert.prompt(
-      "Confirm Password",
-      "Enter your password to delete your account",
-      async (password) => {
-        if (!password) {
-          Alert.alert("Error", "Password cannot be empty.");
-          return;
-        }
+  const confirmDeleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) {
+      Alert.alert("Error", "User not authenticated.");
+      return;
+    }
 
-        const user = auth.currentUser;
-        if (!user || !user.email) {
-          Alert.alert("Error", "User not authenticated.");
-          return;
-        }
+    if (!passwordForDelete) {
+      Alert.alert("Error", "Password cannot be empty.");
+      return;
+    }
 
-        const credential = EmailAuthProvider.credential(user.email, password);
+    const credential = EmailAuthProvider.credential(currentUser.email, passwordForDelete);
 
-        try {
-          await reauthenticateWithCredential(user, credential);
-          await deleteUser(user);
-          await AsyncStorage.removeItem("user");
-          navigation.replace("Login");
-          Alert.alert("Success", "Account deleted successfully.");
-        } catch (error) {
-          Alert.alert("Error", error.message);
-        }
-      },
-      "secure-text"
-    );
+    try {
+      await reauthenticateWithCredential(currentUser, credential);
+      await deleteUser(currentUser);
+      await AsyncStorage.removeItem("user");
+      setShowDeleteModal(false);
+      navigation.replace("Login");
+      Alert.alert("Success", "Account deleted successfully.");
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!auth.currentUser) return;
-
-    Alert.alert(
-      "Delete Account",
-      "For security reasons, please enter your password to delete your account.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Continue", onPress: () => showPasswordPrompt() }
-      ]
-    );
+  const handleDeleteAccount = () => {
+    setShowDeleteModal(true);
   };
 
   const handleChangePassword = async () => {
@@ -92,7 +79,6 @@ const SettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <FontAwesome name="chevron-left" size={30} color="black" style={styles.arrowIcon} />
       </TouchableOpacity>
@@ -141,28 +127,49 @@ const SettingsScreen = () => {
         <TouchableOpacity style={styles.option} onPress={handleDeleteAccount}>
           <Text style={styles.deleteText}>Delete Account</Text>
         </TouchableOpacity>
-
       </View>
+
+
+      <Modal visible={showDeleteModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Confirm Deletion</Text>
+            <Text style={styles.modalMessage}>Enter your password to delete your account:</Text>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              secureTextEntry
+              value={passwordForDelete}
+              onChangeText={setPasswordForDelete}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={styles.modalCancel}>
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmDeleteAccount} style={styles.modalDelete}>
+                <Text style={styles.modalButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
   backButton: {
     position: "absolute",
-    top: 50,  
+    top: 50,
     left: 10,
     padding: 10,
   },
   arrowIcon: {
-    marginLeft: "auto", 
+    marginLeft: "auto",
   },
   optionsContainer: {
-    marginTop: 80,  
+    marginTop: 80,
     padding: 20,
   },
   optionContainer: {
@@ -217,14 +224,49 @@ const styles = StyleSheet.create({
     color: "red",
     fontWeight: "bold",
   },
-  logoutOption: {
-    marginTop: 20,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  logoutText: {
-    fontSize: 16,
-    color: "red",
-    textAlign: "center",
+  modalContainer: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
     fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 14,
+    marginBottom: 15,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalCancel: {
+    backgroundColor: "#ccc",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 10,
+  },
+  modalDelete: {
+    backgroundColor: "red",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 

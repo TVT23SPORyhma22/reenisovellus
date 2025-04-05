@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  ActivityIndicator,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from "react-native";
+import { View, Text, Button, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth } from "../backend/config";
 import { signOut } from "firebase/auth";
@@ -17,8 +8,6 @@ import { fetchExerciseTranslations } from "../components/translations";
 import ExercisePicker from "../components/ExercisePicker";
 import ExercisesList from "../components/ExercisesList";
 import { useNavigation } from "@react-navigation/native";
-import ExerciseForm from "../components/ExerciseForm";
-import ExerciseList from "../components/ExerciseList";
 import { Entypo } from "@expo/vector-icons";
 
 const HomeScreen = () => {
@@ -31,7 +20,6 @@ const HomeScreen = () => {
   const [exerciseList, setExerciseList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
@@ -90,10 +78,6 @@ const HomeScreen = () => {
     setExerciseList(exerciseList.filter((ex) => !selectedExerciseIds.includes(ex.id)));
   };
 
-  const handleExerciseAdded = () => {
-    setRefreshTrigger((prev) => prev + 1);
-  };
-
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} />;
 
@@ -150,11 +134,6 @@ const HomeScreen = () => {
               translations={exerciseTranslations}
               onDelete={deleteExercises}
             />
-          </View>
-
-          <ExerciseForm userId={user.uid} onExerciseAdded={handleExerciseAdded} />
-          <View style={styles.listContainer}>
-            <ExerciseList userId={user.uid} key={refreshTrigger} />
           </View>
         </>
       ) : (
