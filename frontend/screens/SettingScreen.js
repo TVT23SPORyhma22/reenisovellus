@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { auth } from "../backend/config";
@@ -11,6 +11,8 @@ const SettingsScreen = () => {
   const [user, setUser] = useState(null);
   const [newPassword, setNewPassword] = useState("");
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [passwordForDelete, setPasswordForDelete] = useState("");
 
   useEffect(() => {
     const loadUser = async () => {
@@ -30,17 +32,34 @@ const SettingsScreen = () => {
     navigation.replace("Login");
   };
 
-  const handleDeleteAccount = async () => {
-    if (!auth.currentUser) return;
+  const confirmDeleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) {
+      Alert.alert("Error", "User not authenticated.");
+      return;
+    }
 
-    Alert.alert(
-      "Delete Account",
-      "For security reasons, please enter your password to delete your account.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Continue", onPress: () => showPasswordPrompt() }
-      ]
-    );
+    if (!passwordForDelete) {
+      Alert.alert("Error", "Password cannot be empty.");
+      return;
+    }
+
+    const credential = EmailAuthProvider.credential(currentUser.email, passwordForDelete);
+
+    try {
+      await reauthenticateWithCredential(currentUser, credential);
+      await deleteUser(currentUser);
+      await AsyncStorage.removeItem("user");
+      setShowDeleteModal(false);
+      navigation.replace("Login");
+      Alert.alert("Success", "Account deleted successfully.");
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    setShowDeleteModal(true);
   };
 
   const handleChangePassword = async () => {
@@ -60,73 +79,98 @@ const SettingsScreen = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <FontAwesome name="chevron-left" size={30} color="black" style={styles.arrowIcon} />
+      </TouchableOpacity>
 
-      <View style={styles.optionContainer}>
-        <Text style={styles.optionTitle}>Email</Text>
-        <Text style={styles.optionValue}>{user?.email}</Text>
+      <View style={styles.optionsContainer}>
+        <View style={styles.optionContainer}>
+          <Text style={styles.optionTitle}>Email</Text>
+          <Text style={styles.optionValue}>{user?.email}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.option} onPress={() => setShowPasswordChange(!showPasswordChange)}>
+          <Text style={styles.optionText}>Change Password</Text>
+          <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+        </TouchableOpacity>
+
+        {showPasswordChange && (
+          <View style={styles.changePasswordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="New Password"
+              secureTextEntry
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
+            <TouchableOpacity style={styles.changePasswordButton} onPress={handleChangePassword}>
+              <Text style={styles.changePasswordText}>Update Password</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("UnitsOfMeasure")}>
+          <Text style={styles.optionText}>Units of Measure</Text>
+          <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("CountryRegion")}>
+          <Text style={styles.optionText}>Country/Region</Text>
+          <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("PrivacyPolicy")}>
+          <Text style={styles.optionText}>Privacy Policy</Text>
+          <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.option} onPress={handleDeleteAccount}>
+          <Text style={styles.deleteText}>Delete Account</Text>
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.option} onPress={() => setShowPasswordChange(!showPasswordChange)}>        
-        <Text style={styles.optionText}>Change Password</Text>
-        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
-      </TouchableOpacity>
 
-      {showPasswordChange && (
-        <View style={styles.changePasswordContainer}>
-          <TextInput
-            style={styles.passwordInput}
-            placeholder="New Password"
-            secureTextEntry
-            value={newPassword}
-            onChangeText={setNewPassword}
-          />
-          <TouchableOpacity style={styles.changePasswordButton} onPress={handleChangePassword}>
-            <Text style={styles.changePasswordText}>Update Password</Text>
-          </TouchableOpacity>
+      <Modal visible={showDeleteModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Confirm Deletion</Text>
+            <Text style={styles.modalMessage}>Enter your password to delete your account:</Text>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              secureTextEntry
+              value={passwordForDelete}
+              onChangeText={setPasswordForDelete}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={styles.modalCancel}>
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmDeleteAccount} style={styles.modalDelete}>
+                <Text style={styles.modalButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      )}
-
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("UnitsOfMeasure")}>        
-        <Text style={styles.optionText}>Units of Measure</Text>
-        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("CountryRegion")}>        
-        <Text style={styles.optionText}>Country/Region</Text>
-        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("PrivacyPolicy")}>        
-        <Text style={styles.optionText}>Privacy Policy</Text>
-        <FontAwesome name="chevron-right" size={18} color="gray" style={styles.arrowIcon} />
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.option} onPress={handleDeleteAccount}>        
-        <Text style={styles.deleteText}>Delete Account</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.logoutOption} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: "#fff" },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 10,
+    padding: 10,
+  },
+  arrowIcon: {
+    marginLeft: "auto",
+  },
+  optionsContainer: {
+    marginTop: 80,
     padding: 20,
-    backgroundColor: "#fff",
-  },
-  headerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
   },
   optionContainer: {
     paddingVertical: 10,
@@ -177,18 +221,52 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontSize: 16,
-  },
-  logoutOption: {
-    marginTop: 20,
-  },
-  logoutText: {
-    fontSize: 16,
     color: "red",
-    textAlign: "center",
     fontWeight: "bold",
   },
-  arrowIcon: {
-    marginLeft: "auto",
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 14,
+    marginBottom: 15,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalCancel: {
+    backgroundColor: "#ccc",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 10,
+  },
+  modalDelete: {
+    backgroundColor: "red",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 
