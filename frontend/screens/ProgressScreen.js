@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
-import { collection, doc, query, where, getDocs, getDoc } from "firebase/firestore";
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, TextInput } from "react-native";
+import { collection, doc, query, where, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../backend/config";
 import { getAuth } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
@@ -16,6 +16,9 @@ const ProgressScreen = () => {
   const [bodyWeight, setBodyWeight] = useState(null);
   const [exerciseDates, setExerciseDates] = useState({});
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [editingWeight, setEditingWeight] = useState(false);
+  const [newWeight, setNewWeight] = useState(null);
+
 
   // laskee treenipäivien peräkkäisyyden
   // streak = peräkkäiset treenipäivät
@@ -206,13 +209,13 @@ const ProgressScreen = () => {
       // hakee käyttäjän dataa esim, userStats collectionista
       const fetchUserStats = async () => {
         try {
-          const userStatsRef = doc(db, "userStats", userId);
+          const userStatsRef = doc(db, "users", userId);
           const userStatsSnap = await getDoc(userStatsRef);
 
           if (userStatsSnap.exists()) {
-            const { caloriesBurned, bodyWeight } = userStatsSnap.data();
+            const { caloriesBurned, weight } = userStatsSnap.data();
             setCaloriesBurned(caloriesBurned || "-"); // jos kyseistä dataa ei ole, tietokanta antaa - 
-            setBodyWeight(bodyWeight || "-");
+            setBodyWeight(weight);
           } else {
             setCaloriesBurned("-");
             setBodyWeight("-");
@@ -271,10 +274,45 @@ const ProgressScreen = () => {
             <Text style={styles.value}>{caloriesBurned} kcal</Text>
           </View>
 
-          <View style={styles.boxLarge}>
-            <Text style={styles.label}>Body Weight</Text>
-            <Text style={styles.value}>{bodyWeight} kg</Text>
-          </View>
+          <Pressable
+            style={styles.boxLarge}
+            onPress={() => {
+              setNewWeight(bodyWeight.toString());
+              setEditingWeight(true);
+            }}
+            >
+              {!editingWeight ? (
+                <>
+                <Text style={styles.label}>Body Weight</Text>
+                <Text style={styles.value}>{bodyWeight} kg</Text>
+                </>
+                ): (
+                  <TextInput
+                    style={styles.input}
+                    value={newWeight}
+                    onChangeText={setNewWeight}
+                    keyboardType="numeric"
+                    autoFocus
+                    onBlur={async () => {
+                      const parsed = parseFloat(newWeight);
+                      if (!isNaN(parsed)) {
+                        setBodyWeight(parsed);
+                        setEditingWeight(false);
+
+                        try {
+                          const userStatsRef = doc(db, "users", userId);
+                          await updateDoc(userStatsRef, {
+                            weight: parsed});
+                        } catch (error) {
+                          console.error("Error updating body weight:", error);
+                        }
+                      } else {
+                        setEditingWeight(false);
+                      }
+                    }}
+                  />
+                )}
+          </Pressable>
 
           <View style={styles.boxWide}>
             
@@ -429,6 +467,17 @@ const styles = StyleSheet.create({
   streakProgress: {
     height: '100%',
     backgroundColor: '#FCB454',
+  },
+  input: {
+    height: 40,
+    borderColor: "#888",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    textAlign: "center",
+    fontSize: 20,
+    width: 100,
+    backgroundColor: "white",
   },
 });
 
