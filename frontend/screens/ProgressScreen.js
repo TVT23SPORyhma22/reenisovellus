@@ -22,67 +22,35 @@ const ProgressScreen = () => {
   const calculateStreak = (exerciseDates) => {
     if (exerciseDates.length === 0) return 0;
   
-    // poimitaan vain päivämäärät ilman aikaa
-    const uniqueDates = [...new Set(exerciseDates.map(date => date.toDateString()))];
+    // päivämäärät millisekunteina
+    const MS_IN_DAY = 86400000;
   
-    // järjestetään päivämäärät laskevasti
-    const sortedDates = uniqueDates.sort((a, b) => new Date(b) - new Date(a));
+    // nollaa päivämäärä
+    const normalizedTimestamps = exerciseDates.map(date => {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    });
   
-    // luo tämän päivän ilman aikaa
+    const uniqueDates = [...new Set(normalizedTimestamps)].sort((a, b) => b - a);
+  
+    uniqueDates.forEach(ts => console.log(new Date(ts).toDateString()));
+  
+    // laskee peräkkäiset päivät laskemalla nykyisestä päivästä taaksepäin
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    // luo eilisen päivän ilman aikaa
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    // tarkistaa onko tänään treenattu
-    const todayExercised = sortedDates.some(date => 
-      new Date(date).toDateString() === today.toDateString()
-    );
-    
-    // tarkistaa onko eilen treenattu
-    const yesterdayExercised = sortedDates.some(date => 
-      new Date(date).toDateString() === yesterday.toDateString()
-    );
+    let currentDay = today.getTime();
+    let streak = 0;
   
-    // jos tänään on treenattu, aloita streakin laskeminen tästä päivästä
-    // jos ei ole treenattu tänään, mutta eilen on, aloita streakin laskeminen eilisestä
-    let currentDate = todayExercised ? today : yesterdayExercised ? yesterday : null;
-    
-    // jos ei ole treenattu tänään eikä eilen, streak on 0
-    if (!currentDate) return 0;
-    
-    let streak = todayExercised ? 1 : 0; // aloita 1:stä jos tänään on treenattu, muuten 0
-    
-    if (yesterdayExercised) streak++; // lisää streak jos eilen treenattiin
-    
-    // käy läpi aiemmat päivät
-    for (let i = 0; i < sortedDates.length; i++) {
-      const exerciseDate = new Date(sortedDates[i]);
-      exerciseDate.setHours(0, 0, 0, 0);
-      
-      // jos käsittelemme jo tämän päivän tai eilisen, ohita se
-      if (exerciseDate.getTime() === today.getTime() || 
-          exerciseDate.getTime() === yesterday.getTime()) {
-        continue;
-      }
-      
-      // laskee päivien eron nykyisestä päivästä
-      const daysDifference = Math.floor(
-        (currentDate.getTime() - exerciseDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      
-      // jos ero on tasan 1 päivä, lisää streakia ja päivitä nykyinen päivä
-      if (daysDifference === 1) {
+    // käy läpi päivät ja laskee peräkkäiset treenipäivät
+    for (let i = 0; i < uniqueDates.length; i++) {
+      if (uniqueDates[i] === currentDay) {
         streak++;
-        currentDate = exerciseDate;
-      } else if (daysDifference > 1) {
-        // jos ero on enemmän kuin 1 päivä, streak katkeaa
-        break;
+        currentDay -= MS_IN_DAY;
+      } else {
+        break; // jatkuu niin kauan kun päivät on peräkkäisiä
       }
     }
-    
     return streak;
   };
   
