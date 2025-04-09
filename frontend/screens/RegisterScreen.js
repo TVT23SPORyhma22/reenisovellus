@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { View, TextInput, Button, Text, StyleSheet } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth } from "../backend/config"; 
+import { auth, db } from "../backend/config"; 
+import { collection, doc, setDoc } from "firebase/firestore";
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -13,7 +14,16 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      // käyttäjätiedot tallennetaan Firestoreen
+      await setDoc(doc(db, "users", user.uid), {
+        userId: user.uid,
+        email: user.email,
+        weight: "-"
+      });
+
+      // navigoi pääsivulle rekisteröinnin jälkeen
       navigation.replace("Main");
     } catch (error) {
       let errorMessage = "Something went wrong. Please try again.";

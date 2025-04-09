@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { db, auth } from "../backend/config";
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const fetchExerciseTranslations = async (languageCode) => {
   try {
@@ -32,10 +34,11 @@ const fetchExerciseTranslations = async (languageCode) => {
   }
 };
 
-const ExercisePicker = ({ exercises, onAdd }) => {
+const ExercisePicker = ({ exercises }) => {
   const [selectedExerciseId, setSelectedExerciseId] = useState(null);
   const [sets, setSets] = useState('');
   const [reps, setReps] = useState('');
+  const [weight, setWeight] = useState('');
   const [translations, setTranslations] = useState({});
   
   useEffect(() => {
@@ -47,14 +50,41 @@ const ExercisePicker = ({ exercises, onAdd }) => {
     loadTranslations();
   }, []);
 
-  const addExercise = () => {
-    if (!selectedExerciseId || !sets || !reps) {
+  const addExercise = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Error", "You must be logged in to add exercises."); // jos käyttäjä ei ole kirjautunut sisään
       return;
     }
-    onAdd(selectedExerciseId, sets, reps);
-    setSets('');
-    setReps('');
+
+    const exerciseName = translations[selectedExerciseId];
+  
+    try {
+      const exercisesRef = collection(db, "exercises");
+  
+      await addDoc(exercisesRef, {
+        name: exerciseName,
+        sets: parseInt(sets),
+        reps: parseInt(reps),
+        weight: weight ? parseFloat(weight) : 0,
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+      });
+  
+      setSets('');
+      setReps('');
+      setWeight('');
+      setSelectedExerciseId(null);
+  
+      Alert.alert("Success", "Exercise added successfully!");
+  
+     
+    } catch (error) {
+      console.error("Error adding exercise: ", error);
+      Alert.alert("Error", "Failed to add exercise");
+    }
   };
+  
 
   return (
     <View style={styles.container}>
@@ -93,7 +123,14 @@ const ExercisePicker = ({ exercises, onAdd }) => {
         onChangeText={setReps}
         placeholder="Enter reps"
       />
-
+      <Text style={styles.title}>Paino (kg)</Text>
+      <TextInput
+        style={styles.input}
+        keyboardType="numeric"
+        value={weight}
+        onChangeText={setWeight}
+        placeholder="Enter weight"
+      />
       <TouchableOpacity style={styles.button} onPress={addExercise}>
         <Text style={styles.buttonText}>Lisää listaan</Text>
       </TouchableOpacity>

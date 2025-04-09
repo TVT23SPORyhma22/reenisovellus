@@ -23,7 +23,6 @@ const ExerciseList = () => {
   const [error, setError] = useState(null);
   const [userId, setUserId] = useState(null);
 
-  //hakee käyttäjän Firebase Authin kautta
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -34,7 +33,7 @@ const ExerciseList = () => {
       }
     });
 
-    return () => unsubscribe(); // siivoaa kuuntelijan
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -57,7 +56,6 @@ const ExerciseList = () => {
           exerciseList.push({
             id: doc.id,
             ...doc.data(),
-            // muuttaa firestoren aikamerkinnän päivämääräksi
             createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date(),
           });
         });
@@ -72,9 +70,8 @@ const ExerciseList = () => {
     };
 
     fetchExercises();
-  }, [userId]); // hakee vain kun userId muuttuu
+  }, [userId]);
 
-  // lataus symboli
   if (loading || userId === null) {
     return <ActivityIndicator size="large" color="pink" />;
   }
@@ -83,7 +80,6 @@ const ExerciseList = () => {
     return <Text style={styles.errorText}>{error}</Text>;
   }
 
-    // jos ei ole yhtäkään harjoitusta
   if (exercises.length === 0) {
     return <Text style={styles.emptyText}>No added exercises!</Text>;
   }
@@ -100,6 +96,7 @@ const ExerciseList = () => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
