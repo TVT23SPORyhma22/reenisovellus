@@ -8,9 +8,9 @@ import ExercisePicker from "../components/ExercisePicker";
 import ExercisesList from "../components/ExercisesList";
 import { useNavigation } from "@react-navigation/native";
 import { Entypo } from "@expo/vector-icons";
-import { db } from "../backend/config"; // Подключаем Firebase
-import { collection, addDoc } from "firebase/firestore"; // Для добавления данных
-import { Picker } from '@react-native-picker/picker'; // Импортируем Picker из правильного пакета
+import { db } from "../backend/config"; 
+import { collection, addDoc } from "firebase/firestore"; 
+import { Picker } from '@react-native-picker/picker'; 
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -52,7 +52,7 @@ const HomeScreen = () => {
           setExerciseData(exerciseData.results);
         }
 
-        setExerciseTranslations(await fetchExerciseTranslations(2)); // Загружаем переводы
+        setExerciseTranslations(await fetchExerciseTranslations(2)); 
       } catch (error) {
         setError("Failed to load data.");
       }
@@ -62,17 +62,10 @@ const HomeScreen = () => {
     fetchData();
   }, [selectedCategory]);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    await AsyncStorage.removeItem("user");
-    setUser(null);
-    navigation.replace("Login");
-  };
 
   const addExerciseToList = (exerciseId, sets, reps) => {
     const selectedExercise = exerciseData.find((ex) => ex.id === exerciseId);
     if (selectedExercise) {
-      // Добавляем уникальный ID для упражнения в списке
       setExerciseList([
         ...exerciseList,
         { ...selectedExercise, sets, reps, id: `${selectedExercise.id}-${new Date().getTime()}` }
@@ -84,7 +77,6 @@ const HomeScreen = () => {
     setExerciseList(exerciseList.filter((ex) => !selectedExerciseIds.includes(ex.id)));
   };
 
-  // Сохранение тренировки в Firebase с уникальным именем
   const saveWorkoutPlan = async () => {
     if (!user) {
       alert("You must be logged in to save a workout.");
@@ -92,16 +84,15 @@ const HomeScreen = () => {
     }
 
     try {
-      // Сохраняем тренировку с упражнениями в Firestore
       const workoutDocRef = await addDoc(collection(db, "workouts"), {
-        userId: user.uid, // Обязательно добавляем userId в документ
-        workoutName: `Workout-${new Date().toLocaleDateString()}-${new Date().getTime()}`, // Уникальное имя для тренировки
+        userId: user.uid, 
+        workoutName: `Workout-${new Date().toLocaleDateString()}-${new Date().getTime()}`, 
         exercises: exerciseList,
         createdAt: new Date(),
       });
 
       console.log("Workout saved with ID: ", workoutDocRef.id);
-      navigation.navigate("Main"); // Переход на экран Main после сохранения
+      navigation.navigate("Main"); 
     } catch (error) {
       console.log("Error saving workout plan", error);
     }
@@ -118,62 +109,46 @@ const HomeScreen = () => {
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Entypo name="chevron-left" size={30} color="black" />
             </TouchableOpacity>
-            <Text style={styles.welcomeText}>Welcome, {user?.email}</Text>
-            <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
-              <Entypo name="menu" size={30} color="black" />
-            </TouchableOpacity>
           </View>
-
-          {menuVisible && (
-            <View style={styles.menu}>
-              <TouchableOpacity onPress={() => navigation.navigate("Profile")} style={styles.menuButton}>
-                <Text style={styles.menuText}>My Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleLogout} style={styles.menuButton}>
-                <Text style={styles.menuText}>Log Out</Text>
-              </TouchableOpacity>
-            </View>
-          )}
 
           <View style={styles.formBox}>
             <Picker
-              selectedValue={selectedCategory}
-              onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="-- Select Category --" value={null} />
-              {categories.map((category) => (
-                <Picker.Item key={category.id} label={category.name} value={category.id} />
-              ))}
-            </Picker>
+             selectedValue={selectedCategory}
+             onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+             style={styles.picker}
+           >
+             <Picker.Item label="-- Select Category --" value={null} />
+             {categories.map((category) => (
+               <Picker.Item key={category.id} label={category.name} value={category.id} />
+             ))}
+           </Picker>
 
-            <ExercisePicker
-              exercises={exerciseData}
-              translations={exerciseTranslations}
-              onAdd={addExerciseToList}
-            />
-          </View>
+           <ExercisePicker
+             exercises={exerciseData}
+             translations={exerciseTranslations}
+             onAdd={addExerciseToList}
+           />
+         </View>
 
-          <View style={styles.exerciseListContainer}>
-            <ExercisesList
-              exercises={exerciseList}
-              translations={exerciseTranslations}
-              onDelete={deleteExercises}
-            />
-          </View>
+         <View style={styles.exerciseListContainer}>
+           <ExercisesList
+             exercises={exerciseList}
+             translations={exerciseTranslations}
+             onDelete={deleteExercises}
+           />
+         </View>
 
-          {/* Кнопка для сохранения плана тренировки и возвращения на экран Main */}
-          <TouchableOpacity style={styles.saveButton} onPress={saveWorkoutPlan}>
-            <Text style={styles.saveButtonText}>Save & Go Back to Main</Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <View style={styles.centeredContainer}>
-          <Text style={styles.infoText}>Please log in to see your profile and exercises.</Text>
-          <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
-            <Text style={styles.loginButtonText}>Go to Login</Text>
-          </TouchableOpacity>
-        </View>
+         <TouchableOpacity style={styles.saveButton} onPress={saveWorkoutPlan}>
+           <Text style={styles.saveButtonText}>Save & Go Back to Main</Text>
+         </TouchableOpacity>
+       </>
+     ) : (
+       <View style={styles.centeredContainer}>
+         <Text style={styles.infoText}>Please log in to see your profile and exercises.</Text>
+         <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
+           <Text style={styles.loginButtonText}>Go to Login</Text>
+         </TouchableOpacity>
+         </View>
       )}
     </ScrollView>
   );
