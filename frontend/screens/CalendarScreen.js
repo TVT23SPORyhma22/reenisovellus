@@ -1,17 +1,44 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { use, useState, useEffect } from "react";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
+import { db } from "../backend/config";
+import { auth } from "../backend/config"; 
 
-// Data example
-const workoutData = {
-  "2025-03-18": "Penkkipunnerrus 4x6-8 70kg, Vinopenkki 4x8-10 15kg",
-  "2025-03-19": "Leuanveto 4x6-8, Kulmasoutu 4x8-10 50kg",
-  "2025-03-20": "Vinopenkki tanko 4x6-8 40kg, Dipit 3x10-12",
-  "2025-03-21": "T-soutu 4x8-10, Kapea ylätalja 3x10-12 50kg",
-};
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState("");
+  const [workouts, setWorkouts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { currentUser } = auth;
+
+  useEffect(() => {
+    if (selectedDate) {
+      fetchWorkouts(selectedDate);
+    }
+  }, [selectedDate]);
+
+  async function fetchWorkouts(date) {
+    setLoading(true);
+    try {
+      const selectedTimestamp = Timestamp.fromDate(new Date(date));
+      const startOfDay = new Timestamp(selectedTimestamp.seconds, 0);
+      const endOfDay = new Timestamp(selectedTimestamp.seconds + 86400, 0);
+
+      const q = query(
+        collection(db, "exercises"),
+        where("userId", "==", currentUser.uid),
+        where("createdAt", ">=", startOfDay),
+        where("createdAt", "<", endOfDay)
+      );
+      const querySnapshot = await getDocs(q);
+      const exercises = querySnapshot.docs.map((doc) => doc.data());
+      setWorkouts(exercises);
+    } catch (error) {
+      console.error("Error fetching workouts:", error);
+    }
+    setLoading(false);
+  }
   
   return (
     <View style={styles.container}>
@@ -32,11 +59,17 @@ export default function CalendarScreen() {
         <Text style={styles.dateText}>
           {selectedDate ? `Exercise ${selectedDate}:` : "Pick a date"}
         </Text>
-        <Text style={styles.workoutText}>
-          {selectedDate && workoutData[selectedDate]
-            ? workoutData[selectedDate]
-            : "No data"}
-        </Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="tomato" />
+        ) : workouts.length > 0 ? (
+          workouts.map((exercise, index) => (
+            <Text key={index} style={styles.workoutText}>
+              {exercise.name} {exercise.sets}x{exercise.reps} {exercise.weight}kg
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.workoutText}>No data</Text> 
+        )}
       </View>
     </View>
   );

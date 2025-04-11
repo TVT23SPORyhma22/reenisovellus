@@ -1,15 +1,16 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createNativeStackNavigator } from "@react-navigation/native-stack"; // Используем createNativeStackNavigator
 
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
-import HomeScreen from "./screens/HomeScreen";
+import ProfileScreen from "./screens/ProfileScreen";
+import SettingScreen from "./screens/SettingScreen";
 import BottomTabNavigator from "./navigation/BottomTabNavigator";
+import HomeScreen from "./screens/HomeScreen"; 
+import MyPlanScreen from "./screens/MyPlanScreen";
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator(); // Используем createNativeStackNavigator
 
 function Home() {
   return <BottomTabNavigator />;
@@ -18,10 +19,14 @@ function Home() {
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: true }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Main" component={Home} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="HomeScreen" component={HomeScreen} />
+        <Stack.Screen name="MyPlan" component={MyPlanScreen} />
+        <Stack.Screen name="Settings" component={SettingScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

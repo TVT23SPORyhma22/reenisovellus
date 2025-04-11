@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { View, TextInput, Button, Text } from "react-native";
+import { View, TextInput, Button, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../backend/config"; 
-
+import { SafeAreaView } from "react-native-safe-area-context";
 console.log("Firebase Auth:", auth); // debugging
 
 const LoginScreen = ({ navigation }) => {
@@ -51,14 +51,20 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <View>
+
+    <View style={styles.container}>
+    <Text style={styles.title}>Welcome Back</Text>
+    <Text style={styles.subtitle}>Log in to continue</Text>
+      
       <TextInput 
+        style={styles.input}
         placeholder="Email" 
         value={email} 
         onChangeText={setEmail} 
         keyboardType="email-address" 
       />
       <TextInput 
+        style={styles.input}
         placeholder="Password" 
         value={password} 
         secureTextEntry 
@@ -68,7 +74,69 @@ const LoginScreen = ({ navigation }) => {
       <Button title="Login" onPress={handleLogin} />
       <Button title="Register" onPress={() => navigation.navigate("Register")} />
     </View>
+
+
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 5,
+    color: "#333",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 20,
+  },
+  input: {
+    width: "100%",
+    height: 50,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  button: {
+    width: "100%",
+    backgroundColor: "#007bff",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  registerText: {
+    marginTop: 15,
+    color: "#007bff",
+    fontSize: 16,
+
+
+
+  },
+});
 
 export default LoginScreen;
