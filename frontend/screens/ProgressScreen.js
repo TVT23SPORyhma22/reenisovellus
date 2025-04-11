@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, TextInput } from "react-native";
+import { View, Text, StyleSheet, Modal, ActivityIndicator, ScrollView, Pressable, TextInput } from "react-native";
 import { collection, doc, query, where, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../backend/config";
 import { getAuth } from "firebase/auth";
@@ -18,6 +18,9 @@ const ProgressScreen = () => {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [editingWeight, setEditingWeight] = useState(false);
   const [newWeight, setNewWeight] = useState(null);
+  const [streakGoal, setStreakGoal] = useState(7);
+  const [newGoalInput, setNewGoalInput] = useState('');
+  const [showGoalModal, setShowGoalModal] = useState(false);
 
 
   // laskee treenipäivien peräkkäisyyden
@@ -37,25 +40,27 @@ const ProgressScreen = () => {
   
     const uniqueDates = [...new Set(normalizedTimestamps)].sort((a, b) => b - a);
   
-    uniqueDates.forEach(ts => console.log(new Date(ts).toDateString()));
-  
-    // laskee peräkkäiset päivät laskemalla nykyisestä päivästä taaksepäin
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let currentDay = today.getTime();
-    let streak = 0;
   
-    // käy läpi päivät ja laskee peräkkäiset treenipäivät
-    for (let i = 0; i < uniqueDates.length; i++) {
-      if (uniqueDates[i] === currentDay) {
-        streak++;
-        currentDay -= MS_IN_DAY;
-      } else {
-        break; // jatkuu niin kauan kun päivät on peräkkäisiä
-      }
+    // jos tänään ei ole treenipäivä, aloitetaan eilisestä
+    if (!uniqueDates.includes(currentDay)) {
+      currentDay -= MS_IN_DAY;
     }
+  
+    let streak = 0;
+    let i = 0;
+  
+    // laske taaksepäin nykyisestä päivästä kunnes löydetään päivä joka ei ole treenipäivä
+    while (uniqueDates.includes(currentDay)) {
+      streak++;
+      currentDay -= MS_IN_DAY;
+    }
+  
     return streak;
   };
+  
   
   // kalenteri, joka näyttää päivät pisteinä
   const CompactCalendar = ({ month, year, workoutDates }) => {
@@ -144,6 +149,35 @@ const ProgressScreen = () => {
     fetchUser();
   }, []);
 
+  // hakee käyttäjän tavoitteen tietokannasta
+  useEffect(() => {
+    const fetchGoal = async () => {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        if (data.streakGoal) {
+          setStreakGoal(data.streakGoal);
+        }
+      }
+    };
+  
+    if (userId) fetchGoal();
+  }, [userId]);
+
+  // tallentaa käyttäjän tavoitteen tietokantaan
+  const updateStreakGoal = async () => {
+    const parsedGoal = parseInt(newGoalInput);
+    if (isNaN(parsedGoal) || parsedGoal < 1) return;
+  
+    await updateDoc(doc(db, 'users', userId), {
+      streakGoal: parsedGoal,
+    });
+  
+    setStreakGoal(parsedGoal);
+    setShowGoalModal(false);
+    setNewGoalInput('');
+  };
+  
   useFocusEffect(
     useCallback(() => {
       if (!userId) return;
@@ -206,7 +240,7 @@ const ProgressScreen = () => {
         }
       };
       
-      // hakee käyttäjän dataa esim, userStats collectionista
+      // hakee käyttäjän dataa esim, users collectionista
       const fetchUserStats = async () => {
         try {
           const userStatsRef = doc(db, "users", userId);
@@ -288,7 +322,7 @@ const ProgressScreen = () => {
                 </>
                 ): (
                   <TextInput
-                    style={styles.input}
+                    style={styles.value}
                     value={newWeight}
                     onChangeText={setNewWeight}
                     keyboardType="numeric"
@@ -315,7 +349,6 @@ const ProgressScreen = () => {
           </Pressable>
 
           <View style={styles.boxWide}>
-            
             <View style={styles.streakContainer}>
               <View style={styles.compactCalendarRow}>
                 {threeMonths.map((data, index) => (
@@ -327,11 +360,17 @@ const ProgressScreen = () => {
                   />
                 ))}
               </View>
+
               <View style={styles.streakBarContainer}>
                 <View style={styles.streakBar}>
-                  <View style={[styles.streakProgress, { width: `${Math.min(currentStreak * 10, 100)}%` }]} />
+                <View style={[styles.streakProgress, { width: `${Math.min((currentStreak / streakGoal) * 100, 100)}%` }]} />
                 </View>
-                <Text style={styles.streakText}>{currentStreak} {currentStreak === 1 ? 'streak' : 'streaks'}</Text>
+                <Pressable onPress={() => setShowGoalModal(true)} style={styles.streakTextContainer}>
+                  <Text style={styles.streakText}>
+                  {currentStreak} / {streakGoal} streak
+                  </Text>
+                  <Text style={styles.streakEditHint}>(Tap to edit)</Text>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -340,6 +379,38 @@ const ProgressScreen = () => {
             <Text style={styles.label}>Total Volume lifted (Last 7 Days)</Text>
             <Text style={styles.value}>{volumeLifted} kg</Text>
           </View>
+
+          <Modal
+            transparent
+            visible={showGoalModal}
+            animationType="fade"
+            onRequestClose={() => setShowGoalModal(false)}
+          >
+      <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+          <Text style={styles.modalTitle}>Edit Streak Goal</Text>
+
+          <TextInput
+          style={styles.modalInput}
+          value={newGoalInput}
+          onChangeText={setNewGoalInput}
+          placeholder="Enter new streak goal"
+          keyboardType="numeric"
+          placeholderTextColor="grey"
+          />
+
+      <View style={styles.modalButtons}>
+          <Pressable style={[styles.modalButton, styles.modalCancelButton]} onPress={() => setShowGoalModal(false)}>
+          <Text style={[styles.modalButtonText, styles.modalCancelText]}>Cancel</Text>
+        </Pressable>
+          <Pressable style={styles.modalButton} onPress={updateStreakGoal}>
+          <Text style={styles.modalButtonText}>Save</Text>
+        </Pressable>
+      </View>
+    </View>
+  </View>
+</Modal>
+
         </View>
       )}
     </ScrollView>
@@ -391,16 +462,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginTop: 10,
-  },
-
-  streakContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  streakText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginTop: 5,
   },
   // kalenterin tyylit
   compactCalendarRow: {
@@ -478,6 +539,95 @@ const styles = StyleSheet.create({
     fontSize: 20,
     width: 100,
     backgroundColor: "white",
+  },
+  
+  streakContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+// streak tekstin container
+  streakTextContainer: {
+    alignItems: 'center',
+  },
+  streakText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  streakEditHint: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  streakEditHint: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
+
+  // streakin muokkaus ikkuna
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  
+  modalBox: {
+    width: '85%',
+    backgroundColor: '#fff',
+    padding: 25,
+    borderRadius: 16,
+    alignItems: 'center',
+    elevation: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  modalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+    color: '#333',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  }, 
+  modalButton: {
+    flex: 1,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginHorizontal: 5,
+    alignItems: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: 'grey',
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalCancelText: {
+    color: '#fff',
   },
 });
 
