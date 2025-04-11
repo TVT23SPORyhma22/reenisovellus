@@ -117,8 +117,8 @@ const NutritionScreen = () => {
 
   // Recommended macronutrients based on targetCalories
   const recommendedMacros = {
-    carbs: (targetCalories * 0.55) / 4, // 55% carbs (1 g carbs = 4 calories)
-    protein: (targetCalories * 0.15) / 4, // 15% protein (1 g protein = 4 calories)
+    carbs: (targetCalories * 0.40) / 4, // 40% carbs (1 g carbs = 4 calories)
+    protein: (targetCalories * 0.30) / 4, // 30% protein (1 g protein = 4 calories)
     fat: (targetCalories * 0.30) / 9, // 30% fat (1 g fat = 9 calories)
   };
 
