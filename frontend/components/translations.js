@@ -20,10 +20,11 @@ export const fetchExerciseTranslations = async (languageCode) => {
       acc.push(...data.results);
       return acc;
     }, []);
-
-    // Map the filtered translations to the desired format
     allTranslations.forEach(translation => {
-      translations[translation.exercise] = translation.name;
+      if (translation.language === 2 && translation.name?.trim()) {
+        translations[translation.exercise] = translation.name;
+      }
+
     });
 
     return translations;

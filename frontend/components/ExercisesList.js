@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {View,Text,FlatList,StyleSheet,TouchableOpacity,Alert,} from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { db, auth } from '../backend/config';
-import {collection,query,where, orderBy, onSnapshot,deleteDoc,doc,} from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+
 
 const ExercisesList = ({ translations }) => {
   const [exercises, setExercises] = useState([]);
@@ -49,13 +50,18 @@ const ExercisesList = ({ translations }) => {
       setSelectedExercises([...selectedExercises, exerciseId]);
     }
   };
+  const filteredExercises = exercises.filter((exercise) => {
+    const translation = translations[exercise.exerciseId];
+    return translation && translation.language === 2;
+  });
 
   return (
     <View style={styles.container}>
       <Text style={styles.subTitle}>Treenit</Text>
 
       <FlatList
-        data={exercises.filter((ex) => ex !== undefined && ex !== null)}
+        data={filteredExercises}
+
         keyExtractor={(item) => `${item.id}`}
         renderItem={({ item }) => {
           const isSelected = selectedExercises.includes(item.id);

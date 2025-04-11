@@ -10,16 +10,14 @@ const fetchExerciseTranslations = async (languageCode) => {
     let url = `https://wger.de/api/v2/exercise-translation/?language=${languageCode}&limit=100`;
     let attempts = 0;
     const maxAttempts = 5;
-
     while (url && attempts < maxAttempts) {
       const response = await fetch(url);
       if (!response.ok) return {};
 
       const data = await response.json();
-      // Only store translations that are in the specified language
       data.results.forEach(translation => {
-        // Check if the translation language is English (language code = 2)
-        if (translation.language === 2) {
+        if (translation.language === 2 && translation.name?.trim()) {
+
           translations[translation.exercise] = translation.name;
         }
       });
@@ -70,7 +68,7 @@ const ExercisePicker = ({ exercises }) => {
         userId: user.uid,
         createdAt: serverTimestamp(),
       });
-  
+      
       setSets('');
       setReps('');
       setWeight('');
@@ -84,7 +82,6 @@ const ExercisePicker = ({ exercises }) => {
       Alert.alert("Error", "Failed to add exercise");
     }
   };
-  
 
   return (
     <View style={styles.container}>
@@ -123,14 +120,17 @@ const ExercisePicker = ({ exercises }) => {
         onChangeText={setReps}
         placeholder="Enter reps"
       />
+          
       <Text style={styles.title}>Paino (kg)</Text>
       <TextInput
         style={styles.input}
         keyboardType="numeric"
         value={weight}
         onChangeText={setWeight}
-        placeholder="Enter weight"
+        placeholder="Enter weight (kg)"
       />
+
+
       <TouchableOpacity style={styles.button} onPress={addExercise}>
         <Text style={styles.buttonText}>Lisää listaan</Text>
       </TouchableOpacity>
