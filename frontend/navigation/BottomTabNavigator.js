@@ -1,7 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import HomeScreen from "../screens/HomeScreen";
+import HomeScreen from "../screens/HomeScreen2";
 import CalendarScreen from "../screens/CalendarScreen";
 import FavoritesScreen from "../screens/FavoritesScreen";
 import MapScreen from "../screens/MapScreen";
@@ -22,7 +22,7 @@ export default function BottomTabNavigator() {
           else if (route.name === "Calendar") iconName = "calendar";
           else if (route.name === "Favorites") iconName = "heart";
           else if (route.name === "Map") iconName = "map";
-          else if (route.name === "Progress") iconName = "stats-chart-outline"; // progress sivu
+          else if (route.name === "Progress") iconName = "stats-chart-outline"; 
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Image } from "react-native";
+import { View, Text, Button, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth } from "../backend/config";
 import { signOut } from "firebase/auth";
-import { Picker } from "@react-native-picker/picker";
 import { fetchExerciseTranslations } from "../components/translations";
 import ExercisePicker from "../components/ExercisePicker";
 import ExercisesList from "../components/ExercisesList";
 import { useNavigation } from "@react-navigation/native";
 import { Entypo } from "@expo/vector-icons";
+import { db } from "../backend/config"; 
+import { collection, addDoc } from "firebase/firestore"; 
+import { Picker } from '@react-native-picker/picker'; 
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -50,8 +52,8 @@ const HomeScreen = () => {
           setExerciseData(exerciseData.results);
         }
 
-        setExerciseTranslations(await fetchExerciseTranslations(2));
-      } catch {
+        setExerciseTranslations(await fetchExerciseTranslations(2)); 
+      } catch (error) {
         setError("Failed to load data.");
       }
       setLoading(false);
@@ -60,22 +62,40 @@ const HomeScreen = () => {
     fetchData();
   }, [selectedCategory]);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    await AsyncStorage.removeItem("user");
-    setUser(null);
-    navigation.replace("Login");
-  };
 
   const addExerciseToList = (exerciseId, sets, reps) => {
     const selectedExercise = exerciseData.find((ex) => ex.id === exerciseId);
     if (selectedExercise) {
-      setExerciseList([...exerciseList, { ...selectedExercise, sets, reps }]);
+      setExerciseList([
+        ...exerciseList,
+        { ...selectedExercise, sets, reps, id: `${selectedExercise.id}-${new Date().getTime()}` }
+      ]);
     }
   };
 
   const deleteExercises = (selectedExerciseIds) => {
     setExerciseList(exerciseList.filter((ex) => !selectedExerciseIds.includes(ex.id)));
+  };
+
+  const saveWorkoutPlan = async () => {
+    if (!user) {
+      alert("You must be logged in to save a workout.");
+      return;
+    }
+
+    try {
+      const workoutDocRef = await addDoc(collection(db, "workouts"), {
+        userId: user.uid, 
+        workoutName: `Workout-${new Date().toLocaleDateString()}-${new Date().getTime()}`, 
+        exercises: exerciseList,
+        createdAt: new Date(),
+      });
+
+      console.log("Workout saved with ID: ", workoutDocRef.id);
+      navigation.navigate("Main"); 
+    } catch (error) {
+      console.log("Error saving workout plan", error);
+    }
   };
 
   if (loading) return <LoadingScreen />;
@@ -86,28 +106,10 @@ const HomeScreen = () => {
       {user ? (
         <>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
-              <Image
-                source={user?.photoURL ? { uri: user.photoURL } : require("../assets/default-profile.png")}
-                style={styles.profilePhoto}
-              />
-            </TouchableOpacity>
-            <Text style={styles.welcomeText}>Welcome, {user?.email}</Text>
-            <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
-              <Entypo name="menu" size={30} color="black" />
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Entypo name="chevron-left" size={30} color="black" />
             </TouchableOpacity>
           </View>
-
-          {menuVisible && (
-            <View style={styles.menu}>
-              <TouchableOpacity onPress={() => navigation.navigate("Profile")} style={styles.menuButton}>
-                <Text style={styles.menuText}>My Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleLogout} style={styles.menuButton}>
-                <Text style={styles.menuText}>Log Out</Text>
-              </TouchableOpacity>
-            </View>
-          )}
 
           <View style={styles.formBox}>
             <Picker
@@ -121,28 +123,32 @@ const HomeScreen = () => {
               ))}
             </Picker>
 
-            <ExercisePicker
-              exercises={exerciseData}
-              translations={exerciseTranslations}
-              onAdd={addExerciseToList}
-            />
-          </View>
+           <ExercisePicker
+             exercises={exerciseData}
+             translations={exerciseTranslations}
+             onAdd={addExerciseToList}
+           />
+         </View>
 
-          <View style={styles.exerciseListContainer}>
-            <ExercisesList
-              exercises={exerciseList}
-              translations={exerciseTranslations}
-              onDelete={deleteExercises}
-            />
-          </View>
-        </>
-      ) : (
-        <View style={styles.centeredContainer}>
-          <Text style={styles.infoText}>Please log in to see your profile and exercises.</Text>
-          <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
-            <Text style={styles.loginButtonText}>Go to Login</Text>
-          </TouchableOpacity>
-        </View>
+         <View style={styles.exerciseListContainer}>
+           <ExercisesList
+             exercises={exerciseList}
+             translations={exerciseTranslations}
+             onDelete={deleteExercises}
+           />
+         </View>
+
+         <TouchableOpacity style={styles.saveButton} onPress={saveWorkoutPlan}>
+           <Text style={styles.saveButtonText}>Save & Go Back to Main</Text>
+         </TouchableOpacity>
+       </>
+     ) : (
+       <View style={styles.centeredContainer}>
+         <Text style={styles.infoText}>Please log in to see your profile and exercises.</Text>
+         <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
+           <Text style={styles.loginButtonText}>Go to Login</Text>
+         </TouchableOpacity>
+         </View>
       )}
     </ScrollView>
   );
@@ -248,6 +254,19 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   loginButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  saveButton: {
+    backgroundColor: "#A0716C",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginBottom: 60,
+    alignItems: "center",
+  },
+  saveButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",

@@ -463,7 +463,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 10,
   },
-  
   // kalenterin tyylit
   compactCalendarRow: {
     flexDirection: 'row',
@@ -541,6 +540,7 @@ const styles = StyleSheet.create({
     width: 100,
     backgroundColor: "white",
   },
+  
   streakContainer: {
     width: '100%',
     alignItems: 'center',
