@@ -1,116 +1,68 @@
-// komponentti uuden harjoituksen lisäämiseen
-
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../backend/config";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 
-const ExerciseForm = ({ userId, onExerciseAdded }) => {
-  const [exerciseName, setExerciseName] = useState("");
+const ExerciseForm = ({ onAddExercise }) => {
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
-  const [weight, setWeight] = useState("");
 
-  const resetForm = () => {
-    setExerciseName("");
-    setSets("");
-    setReps("");
-    setWeight("");
-  };
-
-const handleSubmit = async () => {
-  // pakollisena exercise, set ja rep
-    if (!exerciseName || !sets || !reps) {
-      Alert.alert("Error", "Please fill all required fields");
-      return;
-    }
-  
-    try {
-      const exercisesRef = collection(db, "exercises");
-      
-      await addDoc(exercisesRef, {
-        name: exerciseName,
-        sets: parseInt(sets),
-        reps: parseInt(reps),
-        weight: weight ? parseFloat(weight) : 0,
-        userId: userId,
-        createdAt: serverTimestamp()
-      });
-  
-      resetForm();
-      
-      Alert.alert("Success", "Exercise added successfully!");
-      
-      if (onExerciseAdded) {
-        onExerciseAdded();
-      }
-      
-    } catch (error) {
-      console.error("Error adding exercise: ", error);
-      Alert.alert("Error", "Failed to add exercise");
+  const handleAddExercise = () => {
+    if (sets && reps) {
+      onAddExercise(parseInt(sets), parseInt(reps)); // Передаем количество сетов и повторений
+      setSets("");
+      setReps("");
+    } else {
+      alert("Please fill in both sets and reps.");
     }
   };
 
   return (
-    <View style={styles.formContainer}>
-      <Text style={styles.formTitle}>Add New Exercise</Text>
-      
+    <View style={styles.container}>
+      <Text style={styles.title}>Add Exercise</Text>
       <TextInput
         style={styles.input}
-        placeholder="Exercise Name"
-        value={exerciseName}
-        onChangeText={setExerciseName}
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Sets"
         value={sets}
         onChangeText={setSets}
         keyboardType="numeric"
+        placeholder="Sets"
       />
-      
       <TextInput
         style={styles.input}
-        placeholder="Reps"
         value={reps}
         onChangeText={setReps}
         keyboardType="numeric"
+        placeholder="Reps"
       />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Weight (kg)"
-        value={weight}
-        onChangeText={setWeight}
-        keyboardType="numeric"
-      />
-      
-      <Button title="Add Exercise" onPress={handleSubmit} />
+      <TouchableOpacity style={styles.button} onPress={handleAddExercise}>
+        <Text style={styles.buttonText}>Add Exercise</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
-
 const styles = StyleSheet.create({
-  formContainer: {
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+  container: {
+    padding: 20,
   },
-  formTitle: {
-    fontSize: 17,
+  title: {
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 15,
   },
   input: {
-    backgroundColor: "white",
     borderWidth: 1,
-    borderColor: "blue",
-    borderRadius: 5,
+    borderColor: "#ddd",
     padding: 10,
-    marginBottom: 15,
+    marginBottom: 10,
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: "#A0716C",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
   },
 });
 

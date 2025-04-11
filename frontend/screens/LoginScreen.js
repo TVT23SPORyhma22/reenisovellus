@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { View, TextInput, Button, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../backend/config"; 
+import { auth, db } from "../backend/config"; 
 import { SafeAreaView } from "react-native-safe-area-context";
 console.log("Firebase Auth:", auth); // debugging
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -25,10 +26,22 @@ const LoginScreen = ({ navigation }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+  
       // tallentaa käyttäjän kirjautumisen AsyncStorageen
       await AsyncStorage.setItem("user", JSON.stringify({ email: user.email, uid: user.uid }));
-
+  
+      // tarkistaa onko users collectionia olemassa tietokannassa - jos ei ole, luo sen
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+  
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          userId: user.uid,
+          email: user.email,
+          weight: "-"
+        });
+      }
+  
       navigation.replace("Main");
     } catch (error) {
       let errorMessage = "Something went wrong. Please try again.";

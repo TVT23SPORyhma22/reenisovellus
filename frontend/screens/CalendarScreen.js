@@ -1,45 +1,53 @@
-import React, { use, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../backend/config";
-import { auth } from "../backend/config"; 
-
+import { auth } from "../backend/config";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState("");
-  const [workouts, setWorkouts] = useState([]);
+  const [allWorkouts, setAllWorkouts] = useState([]); // Store all workouts
+  const [filteredWorkouts, setFilteredWorkouts] = useState([]); // Store workouts for the selected date
   const [loading, setLoading] = useState(false);
   const { currentUser } = auth;
 
-  useEffect(() => {
-    if (selectedDate) {
-      fetchWorkouts(selectedDate);
-    }
-  }, [selectedDate]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchAllWorkouts();
+    }, [])
+  );
 
-  async function fetchWorkouts(date) {
+  useEffect(() => {
+    // Filter workouts when a date is selected
+    if (selectedDate) {
+      const filtered = allWorkouts.filter((workout) => {
+        const workoutDate = new Date(workout.createdAt.seconds * 1000).toISOString().split("T")[0];
+        return workoutDate === selectedDate;
+      });
+      setFilteredWorkouts(filtered);
+    }
+  }, [selectedDate, allWorkouts]);
+
+  async function fetchAllWorkouts() {
     setLoading(true);
     try {
-      const selectedTimestamp = Timestamp.fromDate(new Date(date));
-      const startOfDay = new Timestamp(selectedTimestamp.seconds, 0);
-      const endOfDay = new Timestamp(selectedTimestamp.seconds + 86400, 0);
-
       const q = query(
         collection(db, "exercises"),
-        where("userId", "==", currentUser.uid),
-        where("createdAt", ">=", startOfDay),
-        where("createdAt", "<", endOfDay)
+        where("userId", "==", currentUser.uid)
       );
       const querySnapshot = await getDocs(q);
-      const exercises = querySnapshot.docs.map((doc) => doc.data());
-      setWorkouts(exercises);
+      const exercises = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setAllWorkouts(exercises);
     } catch (error) {
       console.error("Error fetching workouts:", error);
     }
     setLoading(false);
   }
-  
   return (
     <View style={styles.container}>
       {/* Calendar */}
@@ -54,21 +62,21 @@ export default function CalendarScreen() {
         }}
       />
 
-      {/* Show exercise for selected day */}
+      {/* Show exercises for selected day */}
       <View style={styles.workoutContainer}>
         <Text style={styles.dateText}>
-          {selectedDate ? `Exercise ${selectedDate}:` : "Pick a date"}
+          {selectedDate ? `Exercises on ${selectedDate}:` : "Pick a date"}
         </Text>
         {loading ? (
           <ActivityIndicator size="large" color="tomato" />
-        ) : workouts.length > 0 ? (
-          workouts.map((exercise, index) => (
+        ) : filteredWorkouts.length > 0 ? (
+          filteredWorkouts.map((exercise, index) => (
             <Text key={index} style={styles.workoutText}>
               {exercise.name} {exercise.sets}x{exercise.reps} {exercise.weight}kg
             </Text>
           ))
         ) : (
-          <Text style={styles.workoutText}>No data</Text> 
+          <Text style={styles.workoutText}>No exercises for this date</Text>
         )}
       </View>
     </View>

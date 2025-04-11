@@ -17,6 +17,7 @@ const fetchExerciseTranslations = async (languageCode) => {
       const data = await response.json();
       data.results.forEach(translation => {
         if (translation.language === 2 && translation.name?.trim()) {
+
           translations[translation.exercise] = translation.name;
         }
       });
@@ -37,10 +38,10 @@ const ExercisePicker = ({ exercises }) => {
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
   const [translations, setTranslations] = useState({});
-
+  
   useEffect(() => {
     const loadTranslations = async () => {
-      const fetchedTranslations = await fetchExerciseTranslations(2);
+      const fetchedTranslations = await fetchExerciseTranslations(2); // Fetch translations for language code 2 (English)
       setTranslations(fetchedTranslations);
     };
 
@@ -50,15 +51,15 @@ const ExercisePicker = ({ exercises }) => {
   const addExercise = async () => {
     const user = auth.currentUser;
     if (!user) {
-      Alert.alert("Error", "You must be logged in to add exercises.");
+      Alert.alert("Error", "You must be logged in to add exercises."); // jos käyttäjä ei ole kirjautunut sisään
       return;
     }
 
     const exerciseName = translations[selectedExerciseId];
-
+  
     try {
       const exercisesRef = collection(db, "exercises");
-
+  
       await addDoc(exercisesRef, {
         name: exerciseName,
         sets: parseInt(sets),
@@ -67,13 +68,15 @@ const ExercisePicker = ({ exercises }) => {
         userId: user.uid,
         createdAt: serverTimestamp(),
       });
-
+      
       setSets('');
       setReps('');
       setWeight('');
       setSelectedExerciseId(null);
-
+  
       Alert.alert("Success", "Exercise added successfully!");
+  
+     
     } catch (error) {
       console.error("Error adding exercise: ", error);
       Alert.alert("Error", "Failed to add exercise");
@@ -88,13 +91,13 @@ const ExercisePicker = ({ exercises }) => {
         onValueChange={(value) => setSelectedExerciseId(value)}
         style={styles.picker}
       >
-        <Picker.Item label="-- Valitse liike --" value={null} />
+        <Picker.Item label="-- Valitse liike --" value="" />
         {exercises
-          .filter((exercise) => translations[exercise.id])
+          .filter((exercise) => translations[exercise.id])  // Only show exercises with English translations
           .map((exercise) => (
             <Picker.Item
               key={exercise.id}
-              label={translations[exercise.id]}
+              label={translations[exercise.id]}  // Using translation for English language only
               value={exercise.id}
             />
           ))}
@@ -117,7 +120,7 @@ const ExercisePicker = ({ exercises }) => {
         onChangeText={setReps}
         placeholder="Enter reps"
       />
-
+          
       <Text style={styles.title}>Paino (kg)</Text>
       <TextInput
         style={styles.input}
@@ -126,6 +129,7 @@ const ExercisePicker = ({ exercises }) => {
         onChangeText={setWeight}
         placeholder="Enter weight (kg)"
       />
+
 
       <TouchableOpacity style={styles.button} onPress={addExercise}>
         <Text style={styles.buttonText}>Lisää listaan</Text>
@@ -166,4 +170,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
 export default ExercisePicker;

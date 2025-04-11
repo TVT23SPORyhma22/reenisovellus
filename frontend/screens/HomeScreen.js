@@ -113,15 +113,15 @@ const HomeScreen = () => {
 
           <View style={styles.formBox}>
             <Picker
-             selectedValue={selectedCategory}
-             onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-             style={styles.picker}
-           >
-             <Picker.Item label="-- Select Category --" value={null} />
-             {categories.map((category) => (
-               <Picker.Item key={category.id} label={category.name} value={category.id} />
-             ))}
-           </Picker>
+              selectedValue={selectedCategory}
+              onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+              style={styles.picker}
+            >
+              <Picker.Item label="-- Select Category --" value="" />
+              {categories.map((category) => (
+                <Picker.Item key={category.id} label={category.name} value={category.id.toString()} />
+              ))}
+            </Picker>
 
            <ExercisePicker
              exercises={exerciseData}

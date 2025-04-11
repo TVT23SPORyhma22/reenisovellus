@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react
 import { db, auth } from '../backend/config';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 
+
 const ExercisesList = ({ translations }) => {
   const [exercises, setExercises] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -12,7 +13,7 @@ const ExercisesList = ({ translations }) => {
     const user = auth.currentUser;
     if (!user) return;
 
-    const q = query(collection(db, 'exercises'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')); //lajittelu luontiajankohdan mukaan
+    const q = query(collection(db, 'exercises'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')); // lajittelu luontiajankohdan mukaan
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const userExercises = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -60,6 +61,7 @@ const ExercisesList = ({ translations }) => {
 
       <FlatList
         data={filteredExercises}
+
         keyExtractor={(item) => `${item.id}`}
         renderItem={({ item }) => {
           const isSelected = selectedExercises.includes(item.id);
@@ -70,21 +72,22 @@ const ExercisesList = ({ translations }) => {
             >
               <View style={styles.exerciseInfo}>
                 <Text style={styles.exerciseName}>
-                {translations[item.exerciseId] || item.name}
+                  {translations[item.exerciseId] || item.name}
                 </Text>
                 <Text style={styles.exerciseDetails}>
                   {[
-                  item.sets ? `Sets: ${item.sets}` : null,
-                  item.reps ? `Reps: ${item.reps}` : null,
-                  item.weight ? `Weight: ${item.weight} kg` : null,
+                    item.sets ? `Sets: ${item.sets}` : null,
+                    item.reps ? `Reps: ${item.reps}` : null,
+                    item.weight ? `Weight: ${item.weight} kg` : null,
                   ]
-                  .filter(Boolean)
-                  .join(' | ')}
+                    .filter(Boolean) // filtteröi tyhjät arvot
+                    .join(' | ')}
                 </Text>
               </View>
             </TouchableOpacity>
           );
         }}
+        scrollEnabled={false}
       />
 
       {exercises.length > 0 && (
@@ -97,6 +100,7 @@ const ExercisesList = ({ translations }) => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     marginTop: 20,
@@ -149,4 +153,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
 export default ExercisesList;
