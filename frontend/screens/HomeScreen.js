@@ -115,9 +115,9 @@ const HomeScreen = () => {
               onValueChange={(itemValue) => setSelectedCategory(itemValue)}
               style={styles.picker}
             >
-              <Picker.Item label="-- Select Category --" value={null} />
+              <Picker.Item label="-- Select Category --" value="" />
               {categories.map((category) => (
-                <Picker.Item key={category.id} label={category.name} value={category.id} />
+                <Picker.Item key={category.id} label={category.name} value={category.id.toString()} />
               ))}
             </Picker>
 

@@ -322,7 +322,7 @@ const ProgressScreen = () => {
                 </>
                 ): (
                   <TextInput
-                    style={styles.input}
+                    style={styles.value}
                     value={newWeight}
                     onChangeText={setNewWeight}
                     keyboardType="numeric"

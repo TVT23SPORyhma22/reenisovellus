@@ -94,7 +94,7 @@ const ExercisePicker = ({ exercises }) => {
         onValueChange={(value) => setSelectedExerciseId(value)}
         style={styles.picker}
       >
-        <Picker.Item label="-- Valitse liike --" value={null} />
+        <Picker.Item label="-- Valitse liike --" value="" />
         {exercises
           .filter((exercise) => translations[exercise.id])  // Only show exercises with English translations
           .map((exercise) => (
