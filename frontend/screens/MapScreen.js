@@ -106,7 +106,7 @@ const GymMapScreen = () => {
         ))}
       </MapView>
 
-      <ScrollView style={styles.listContainer}>
+      <View style={styles.listContainer}>
         <Text style={styles.listHeader}>Gyms nearby:</Text>
         <FlatList
           data={gyms}
@@ -119,7 +119,7 @@ const GymMapScreen = () => {
             </View>
           )}
         />
-      </ScrollView>
+      </View>
 
       {gymDetails && selectedGym && (
         <View style={styles.detailsContainer}>

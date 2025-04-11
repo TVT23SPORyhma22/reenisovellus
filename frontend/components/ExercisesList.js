@@ -81,6 +81,7 @@ const ExercisesList = ({ translations }) => {
             </TouchableOpacity>
           );
         }}
+        scrollEnabled={false}
       />
 
       {exercises.length > 0 && (

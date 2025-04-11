@@ -23,8 +23,12 @@ const RegisterScreen = ({ navigation }) => {
         weight: "-"
       });
 
-      // navigoi pääsivulle rekisteröinnin jälkeen
-      navigation.replace("Main");
+      // rekisteröinti onnistui
+
+      alert("Registration successful! You can now log in.");
+
+      // navigoi kirjautumissivulle rekisteröinnin jälkeen
+      navigation.replace("Login");
     } catch (error) {
       let errorMessage = "Something went wrong. Please try again.";
 
