@@ -83,7 +83,7 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main')} >
         <FontAwesome name="chevron-left" size={30} color="black" style={styles.arrowIcon} />
       </TouchableOpacity>
 
@@ -105,7 +105,7 @@ const ProfileScreen = () => {
         </View>
       </View>
       <View style={styles.menuContainer}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("BodyMeasurement")}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("MeasurementHistory")}>
           <Text style={styles.menuText}>BODY MEASUREMENT</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Membership")}>
