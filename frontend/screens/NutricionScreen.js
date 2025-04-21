@@ -79,10 +79,10 @@ const NutritionScreen = () => {
     const gramsInput = grams[item.id] || 100; // Take the grams input for this product (default 100 g)
 
     // Calculate calories and macronutrients based on grams
-    const calories = (item.energy * gramsInput) / 100;
-    const protein = (item.protein * gramsInput) / 100;
-    const carbs = (item.carbohydrates * gramsInput) / 100;
-    const fat = (item.fat * gramsInput) / 100;
+    const calories = ((item.energy || 0) * gramsInput) / 100;
+    const protein = ((item.protein || 0) * gramsInput) / 100;
+    const carbs = ((item.carbohydrates || 0) * gramsInput) / 100;
+    const fat = ((item.fat || 0) * gramsInput) / 100;
 
     const updatedItem = {
       ...item,
@@ -139,118 +139,92 @@ const NutritionScreen = () => {
   }, [debouncedSearch]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Nutrition Dashboard</Text>
+    <View style={styles.container}>
+      <FlatList
+        ListHeaderComponent={
+          <>
+            <Text style={styles.header}>Nutrition Dashboard</Text>
 
-      <View style={styles.summaryCard}>
-        <AnimatedCircularProgress
-          size={140}
-          width={12}
-          fill={(totalCalories / targetCalories) * 100}
-          tintColor="#00e0ff"
-          backgroundColor="#3d5875">
-          {() => (
-            <Text style={styles.circleText}>
-              {remainingCalories}{"\n"}
-              <Text style={styles.circleSubText}>Remaining</Text>
-            </Text>
-          )}
-        </AnimatedCircularProgress>
+            <View style={styles.summaryCard}>
+              <AnimatedCircularProgress
+                size={140}
+                width={12}
+                fill={(totalCalories / targetCalories) * 100}
+                tintColor="#00e0ff"
+                backgroundColor="#3d5875">
+                {() => (
+                  <Text style={styles.circleText}>
+                    {remainingCalories}{"\n"}
+                    <Text style={styles.circleSubText}>Remaining</Text>
+                  </Text>
+                )}
+              </AnimatedCircularProgress>
 
-        <Text style={styles.statText}>Eaten: {totalCalories} kcal</Text>
-        <Text style={styles.statText}>Target: {targetCalories} kcal</Text>
+              <Text style={styles.statText}>Eaten: {totalCalories} kcal</Text>
+              <Text style={styles.statText}>Target: {targetCalories} kcal</Text>
 
-        <Text style={styles.macroTitle}>Carbs (Recommended)</Text>
-        <Progress.Bar progress={macro.carbs / recommendedMacros.carbs} width={250} color="#5DADE2" />
-        <Text style={styles.macroValue}>{macro.carbs.toFixed(1)} / {recommendedMacros.carbs.toFixed(1)} g</Text>
+              <Text style={styles.macroTitle}>Carbs (Recommended)</Text>
+              <Progress.Bar progress={macro.carbs / recommendedMacros.carbs} width={250} color="#5DADE2" />
+              <Text style={styles.macroValue}>{macro.carbs.toFixed(1)} / {recommendedMacros.carbs.toFixed(1)} g</Text>
 
-        <Text style={styles.macroTitle}>Protein (Recommended)</Text>
-        <Progress.Bar progress={macro.protein / recommendedMacros.protein} width={250} color="#58D68D" />
-        <Text style={styles.macroValue}>{macro.protein.toFixed(1)} / {recommendedMacros.protein.toFixed(1)} g</Text>
+              <Text style={styles.macroTitle}>Protein (Recommended)</Text>
+              <Progress.Bar progress={macro.protein / recommendedMacros.protein} width={250} color="#58D68D" />
+              <Text style={styles.macroValue}>{macro.protein.toFixed(1)} / {recommendedMacros.protein.toFixed(1)} g</Text>
 
-        <Text style={styles.macroTitle}>Fat (Recommended)</Text>
-        <Progress.Bar progress={macro.fat / recommendedMacros.fat} width={250} color="#F5B041" />
-        <Text style={styles.macroValue}>{macro.fat.toFixed(1)} / {recommendedMacros.fat.toFixed(1)} g</Text>
-      </View>
+              <Text style={styles.macroTitle}>Fat (Recommended)</Text>
+              <Progress.Bar progress={macro.fat / recommendedMacros.fat} width={250} color="#F5B041" />
+              <Text style={styles.macroValue}>{macro.fat.toFixed(1)} / {recommendedMacros.fat.toFixed(1)} g</Text>
+            </View>
 
-      <TextInput
-        placeholder="Enter target calories"
-        keyboardType="numeric"
-        style={styles.input}
-        value={String(targetCalories)}
-        onChangeText={(text) => setTargetCalories(Number(text))}
-      />
+            <TextInput
+              placeholder="Enter target calories"
+              keyboardType="numeric"
+              style={styles.input}
+              value={String(targetCalories)}
+              onChangeText={(text) => setTargetCalories(Number(text))}
+            />
 
-      <View style={styles.mealButtons}>
-        {["Breakfast", "Lunch", "Dinner"].map((meal) => (
-          <TouchableOpacity
-            key={meal}
-            style={[styles.mealButton, selectedMeal === meal && styles.mealButtonActive]}
-            onPress={() => setSelectedMeal(meal)}>
-            <Text style={styles.mealText}>{meal}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+            <View style={styles.mealButtons}>
+              {["Breakfast", "Lunch", "Dinner"].map((meal) => (
+                <TouchableOpacity
+                  key={meal}
+                  style={[styles.mealButton, selectedMeal === meal && styles.mealButtonActive]}
+                  onPress={() => setSelectedMeal(meal)}>
+                  <Text style={styles.mealText}>{meal}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-      <TextInput
-        placeholder="Search ingredients..."
-        style={styles.input}
-        value={search}
-        onChangeText={handleSearchChange}
-      />
-
-      {debouncedSearch && (
-        <View style={styles.ingredientsList}>
-          {loading ? (
-            <ActivityIndicator size="large" />
-          ) : ingredients.length > 0 ? (
+            <TextInput
+              placeholder="Search ingredients..."
+              style={styles.input}
+              value={search}
+              onChangeText={handleSearchChange}
+            />
+          </>
+        }
+        data={["Breakfast", "Lunch", "Dinner"]}
+        keyExtractor={(meal) => meal}
+        renderItem={({ item: meal }) => (
+          <View style={{ width: '100%' }}>
+            <Text style={styles.subheader}>{meal}</Text>
             <FlatList
-              data={ingredients}
+              data={mealItems[meal]}
               keyExtractor={(item, index) => `${item.id}-${index}`}
-              renderItem={({ item }) => (
-                <View style={styles.ingredientItem}>
-                  <Text style={styles.bold}>{item.name}</Text>
-                  <Text>Calories: {item.energy} kcal</Text>
-                  <TextInput
-                    keyboardType="numeric"
-                    placeholder="Enter grams"
-                    style={styles.input}
-                    value={grams[item.id]?.toString() || '100'}
-                    onChangeText={(text) => handleGramsChange(item.id, parseInt(text))}
-                  />
-                  <TouchableOpacity style={styles.addButton} onPress={() => addToMeal(item)}>
-                    <Text style={styles.addButtonText}>Add to {selectedMeal}</Text>
+              renderItem={({ item, index }) => (
+                <View style={styles.mealItem}>
+                  <Text>{item.name} - {item.energy} kcal</Text>
+                  <Text>{item.grams} g</Text>
+                  <TouchableOpacity onPress={() => removeFromMeal(meal, index)}>
+                    <Text style={{ color: '#f55' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
               )}
-              onEndReached={loadMoreIngredients}
-              onEndReachedThreshold={0.1}
             />
-          ) : (
-            <Text style={{ color: "#aaa", marginTop: 10 }}>No ingredients found</Text>
-          )}
-        </View>
-      )}
-
-      {["Breakfast", "Lunch", "Dinner"].map((meal) => (
-        <View key={meal} style={{ width: '100%' }}>
-          <Text style={styles.subheader}>{meal}</Text>
-          <FlatList
-            data={mealItems[meal]}
-            keyExtractor={(item, index) => `${item.id}-${index}`}
-            renderItem={({ item, index }) => (
-              <View style={styles.mealItem}>
-                <Text>{item.name} - {item.energy} kcal</Text>
-                <Text>{item.grams} g</Text>
-                <TouchableOpacity onPress={() => removeFromMeal(meal, index)}>
-                  <Text style={{ color: '#f55' }}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-        </View>
-      ))}
-    </ScrollView>
+          </View>
+        )}
+      />
+    </View>
   );
 };
 

@@ -34,20 +34,21 @@ export default function CalendarScreen() {
     setLoading(true);
     try {
       const q = query(
-        collection(db, "exercises"),
+        collection(db, "workouts"), // Ensure you're querying the correct collection
         where("userId", "==", currentUser.uid)
       );
       const querySnapshot = await getDocs(q);
-      const exercises = querySnapshot.docs.map((doc) => ({
+      const workouts = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setAllWorkouts(exercises);
+      setAllWorkouts(workouts);
     } catch (error) {
       console.error("Error fetching workouts:", error);
     }
     setLoading(false);
   }
+
   return (
     <View style={styles.container}>
       {/* Calendar */}
@@ -65,18 +66,25 @@ export default function CalendarScreen() {
       {/* Show exercises for selected day */}
       <View style={styles.workoutContainer}>
         <Text style={styles.dateText}>
-          {selectedDate ? `Exercises on ${selectedDate}:` : "Pick a date"}
+          {selectedDate ? `Workouts on ${selectedDate}:` : "Pick a date"}
         </Text>
         {loading ? (
           <ActivityIndicator size="large" color="tomato" />
         ) : filteredWorkouts.length > 0 ? (
-          filteredWorkouts.map((exercise, index) => (
-            <Text key={index} style={styles.workoutText}>
-              {exercise.name} {exercise.sets}x{exercise.reps} {exercise.weight}kg
-            </Text>
+          filteredWorkouts.map((workout, index) => (
+            <View key={index} style={styles.workoutItem}>
+              <Text style={styles.workoutText}>
+                {workout.workoutName || "Unnamed Workout"}
+              </Text>
+              {workout.exercises.map((exercise, i) => (
+                <Text key={i} style={styles.exerciseText}>
+                  {exercise.name} - {exercise.sets}x{exercise.reps} {exercise.weight}kg
+                </Text>
+              ))}
+            </View>
           ))
         ) : (
-          <Text style={styles.workoutText}>No exercises for this date</Text>
+          <Text style={styles.workoutText}>No workouts for this date</Text>
         )}
       </View>
     </View>
@@ -101,7 +109,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 5,
   },
+  workoutItem: {
+    marginBottom: 10,
+    alignItems: "center",
+  },
   workoutText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  exerciseText: {
     fontSize: 14,
     textAlign: "center",
   },

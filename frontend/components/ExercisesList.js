@@ -3,8 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react
 import { db, auth } from '../backend/config';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 
-
-const ExercisesList = ({ translations }) => {
+const ExercisesList = ({ translations, addedExercises }) => {
   const [exercises, setExercises] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedExercises, setSelectedExercises] = useState([]);
@@ -13,7 +12,7 @@ const ExercisesList = ({ translations }) => {
     const user = auth.currentUser;
     if (!user) return;
 
-    const q = query(collection(db, 'exercises'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')); // lajittelu luontiajankohdan mukaan
+    const q = query(collection(db, 'exercises'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const userExercises = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -50,6 +49,7 @@ const ExercisesList = ({ translations }) => {
       setSelectedExercises([...selectedExercises, exerciseId]);
     }
   };
+
   const filteredExercises = exercises.filter((exercise) => {
     const translation = translations[exercise.exerciseId];
     return translation && translation.language === 2;
@@ -59,9 +59,28 @@ const ExercisesList = ({ translations }) => {
     <View style={styles.container}>
       <Text style={styles.subTitle}>Treenit</Text>
 
+      {/* Render added exercises */}
+      <FlatList
+        data={addedExercises}
+        keyExtractor={(item) => `${item.id}`}
+        renderItem={({ item }) => (
+          <View style={styles.listItem}>
+            <View style={styles.exerciseInfo}>
+              <Text style={styles.exerciseName}>{item.name}</Text>
+              <Text style={styles.exerciseDetails}>
+                {[`Sets: ${item.sets}`, `Reps: ${item.reps}`, item.weight ? `Weight: ${item.weight} kg` : null]
+                  .filter(Boolean)
+                  .join(' | ')}
+              </Text>
+            </View>
+          </View>
+        )}
+        scrollEnabled={false}
+      />
+
+      {/* Render exercises from Firestore */}
       <FlatList
         data={filteredExercises}
-
         keyExtractor={(item) => `${item.id}`}
         renderItem={({ item }) => {
           const isSelected = selectedExercises.includes(item.id);
@@ -75,12 +94,8 @@ const ExercisesList = ({ translations }) => {
                   {translations[item.exerciseId] || item.name}
                 </Text>
                 <Text style={styles.exerciseDetails}>
-                  {[
-                    item.sets ? `Sets: ${item.sets}` : null,
-                    item.reps ? `Reps: ${item.reps}` : null,
-                    item.weight ? `Weight: ${item.weight} kg` : null,
-                  ]
-                    .filter(Boolean) // filtteröi tyhjät arvot
+                  {[`Sets: ${item.sets}`, `Reps: ${item.reps}`, item.weight ? `Weight: ${item.weight} kg` : null]
+                    .filter(Boolean)
                     .join(' | ')}
                 </Text>
               </View>

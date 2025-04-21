@@ -32,78 +32,49 @@ const fetchExerciseTranslations = async (languageCode) => {
   }
 };
 
-const ExercisePicker = ({ exercises }) => {
+const ExercisePicker = ({ exercises, translations, onAdd }) => {
   const [selectedExerciseId, setSelectedExerciseId] = useState(null);
   const [sets, setSets] = useState('');
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
-  const [translations, setTranslations] = useState({});
-  
-  useEffect(() => {
-    const loadTranslations = async () => {
-      const fetchedTranslations = await fetchExerciseTranslations(2); // Fetch translations for language code 2 (English)
-      setTranslations(fetchedTranslations);
-    };
 
-    loadTranslations();
-  }, []);
-
-  const addExercise = async () => {
-    const user = auth.currentUser;
-    if (!user) {
-      Alert.alert("Error", "You must be logged in to add exercises."); // jos käyttäjä ei ole kirjautunut sisään
+  const handleAddExercise = () => {
+    if (!selectedExerciseId || !sets || !reps) {
+      Alert.alert("Error", "Please fill in all fields before adding an exercise.");
       return;
     }
 
     const exerciseName = translations[selectedExerciseId];
-  
-    try {
-      const exercisesRef = collection(db, "exercises");
-  
-      await addDoc(exercisesRef, {
-        name: exerciseName,
-        sets: parseInt(sets),
-        reps: parseInt(reps),
-        weight: weight ? parseFloat(weight) : 0,
-        userId: user.uid,
-        createdAt: serverTimestamp(),
-      });
-      
-      setSets('');
-      setReps('');
-      setWeight('');
-      setSelectedExerciseId(null);
-  
-      Alert.alert("Success", "Exercise added successfully!");
-  
-     
-    } catch (error) {
-      console.error("Error adding exercise: ", error);
-      Alert.alert("Error", "Failed to add exercise");
-    }
+    onAdd(selectedExerciseId, exerciseName, parseInt(sets), parseInt(reps), parseFloat(weight || 0));
+
+    // Reset fields after adding
+    setSelectedExerciseId(null);
+    setSets('');
+    setReps('');
+    setWeight('');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Valitse liike</Text>
+      <Text style={styles.title}>Select Exercise</Text>
       <Picker
         selectedValue={selectedExerciseId}
         onValueChange={(value) => setSelectedExerciseId(value)}
         style={styles.picker}
       >
-        <Picker.Item label="-- Valitse liike --" value="" />
+        <Picker.Item label="-- Select Exercise --" value="" />
         {exercises
-          .filter((exercise) => translations[exercise.id])  // Only show exercises with English translations
+          .filter((exercise) => translations[exercise.id]) // Only show exercises with translations
           .map((exercise) => (
             <Picker.Item
               key={exercise.id}
-              label={translations[exercise.id]}  // Using translation for English language only
+              label={translations[exercise.id]} // Use translated name
               value={exercise.id}
             />
           ))}
       </Picker>
 
-      <Text style={styles.title}>Setit</Text>
+      <Text style={styles.title}>Sets</Text>
       <TextInput
         style={styles.input}
         keyboardType="numeric"
@@ -112,7 +83,7 @@ const ExercisePicker = ({ exercises }) => {
         placeholder="Enter sets"
       />
 
-      <Text style={styles.title}>Toistot</Text>
+      <Text style={styles.title}>Reps</Text>
       <TextInput
         style={styles.input}
         keyboardType="numeric"
@@ -120,8 +91,8 @@ const ExercisePicker = ({ exercises }) => {
         onChangeText={setReps}
         placeholder="Enter reps"
       />
-          
-      <Text style={styles.title}>Paino (kg)</Text>
+
+      <Text style={styles.title}>Weight (kg)</Text>
       <TextInput
         style={styles.input}
         keyboardType="numeric"
@@ -130,9 +101,8 @@ const ExercisePicker = ({ exercises }) => {
         placeholder="Enter weight (kg)"
       />
 
-
-      <TouchableOpacity style={styles.button} onPress={addExercise}>
-        <Text style={styles.buttonText}>Lisää listaan</Text>
+      <TouchableOpacity style={styles.button} onPress={handleAddExercise}>
+        <Text style={styles.buttonText}>Add</Text>
       </TouchableOpacity>
     </View>
   );

@@ -63,14 +63,17 @@ const HomeScreen = () => {
   }, [selectedCategory]);
 
 
-  const addExerciseToList = (exerciseId, sets, reps) => {
-    const selectedExercise = exerciseData.find((ex) => ex.id === exerciseId);
-    if (selectedExercise) {
-      setExerciseList([
-        ...exerciseList,
-        { ...selectedExercise, sets, reps, id: `${selectedExercise.id}-${new Date().getTime()}` }
-      ]);
-    }
+  const addExerciseToList = (exerciseId, name, sets, reps, weight) => {
+    const newExercise = {
+      id: `${exerciseId}-${new Date().getTime()}`, // Unique ID
+      exerciseId,
+      name,
+      sets,
+      reps,
+      weight,
+    };
+
+    setExerciseList((prevList) => [...prevList, newExercise]);
   };
 
   const deleteExercises = (selectedExerciseIds) => {
@@ -84,17 +87,18 @@ const HomeScreen = () => {
     }
 
     try {
-      const workoutDocRef = await addDoc(collection(db, "workouts"), {
-        userId: user.uid, 
-        workoutName: `Workout-${new Date().toLocaleDateString()}-${new Date().getTime()}`, 
+      await addDoc(collection(db, "workouts"), {
+        userId: user.uid,
+        workoutName: `Workout-${new Date().toLocaleDateString()}-${new Date().getTime()}`,
         exercises: exerciseList,
         createdAt: new Date(),
       });
 
-      console.log("Workout saved with ID: ", workoutDocRef.id);
-      navigation.navigate("Main"); 
+      console.log("Workout saved successfully!");
+      navigation.navigate("Main");
     } catch (error) {
-      console.log("Error saving workout plan", error);
+      console.error("Error saving workout plan:", error);
+      alert("Failed to save workout plan.");
     }
   };
 
@@ -132,9 +136,10 @@ const HomeScreen = () => {
 
          <View style={styles.exerciseListContainer}>
            <ExercisesList
-             exercises={exerciseList}
+             exercises={exerciseList} // Pass the added exercises
              translations={exerciseTranslations}
-             onDelete={deleteExercises}
+             addedExercises={exerciseList} // Pass the added exercises to display in real-time
+             onDelete={(ids) => setExerciseList((prev) => prev.filter((ex) => !ids.includes(ex.id)))} // Handle deletion
            />
          </View>
 
