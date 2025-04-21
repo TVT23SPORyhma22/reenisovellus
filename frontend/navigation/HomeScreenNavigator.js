@@ -1,7 +1,7 @@
 import React from "react";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 
-// Импортируем экраны для вкладок
+
 import MyPlanScreen from "../screens/MyPlanScreen";
 import RuokailuScreen from "../screens/NutricionScreen";
 import WorkoutsScreen from "../screens/WorkoutsScreen";

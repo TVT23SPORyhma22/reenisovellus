@@ -16,7 +16,7 @@ const ProfileScreen = () => {
         const storedUser = await AsyncStorage.getItem("user");
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
-          console.log("Loaded user from storage:", parsedUser);  // Отладочное сообщение
+          console.log("Loaded user from storage:", parsedUser);  
           setUser(parsedUser);
           setProfilePhoto(parsedUser.photoURL);
         } else {
@@ -75,7 +75,7 @@ const ProfileScreen = () => {
   const savePhotoToStorage = async (photoUri) => {
     if (user) {
       const updatedUser = { ...user, photoURL: photoUri };
-      console.log("Saving photo to storage:", updatedUser);  // Отладочное сообщение
+      console.log("Saving photo to storage:", updatedUser);  
       await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
     }
@@ -83,7 +83,7 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main')} >
         <FontAwesome name="chevron-left" size={30} color="black" style={styles.arrowIcon} />
       </TouchableOpacity>
 
@@ -105,7 +105,7 @@ const ProfileScreen = () => {
         </View>
       </View>
       <View style={styles.menuContainer}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("BodyMeasurement")}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("MeasurementHistory")}>
           <Text style={styles.menuText}>BODY MEASUREMENT</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Membership")}>
