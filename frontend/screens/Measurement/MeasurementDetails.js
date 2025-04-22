@@ -24,7 +24,7 @@ export default function MeasurementDetails({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { padding: 20 },
-  backButton: { marginBottom: 20 },
+  backButton: { marginBottom: 20, marginTop: 20 },
   title: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
   item: { fontSize: 16, marginBottom: 10 }
 });

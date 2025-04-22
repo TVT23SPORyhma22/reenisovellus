@@ -181,54 +181,67 @@ const ProgressScreen = () => {
   useFocusEffect(
     useCallback(() => {
       if (!userId) return;
-      
-      const fetchExerciseData = async () => {
+
+      const fetchWorkoutData = async () => {
         try {
           setLoading(true);
-          
-          // hakee kolmen kuukauden datan kalenteria ja streakia varten
+
+          // Fetch data from the last three months for the calendar and streak
           const threeMonthsAgo = new Date();
           threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
           const threeMonthsAgoTimestamp = Timestamp.fromDate(threeMonthsAgo);
-      
-          // hakee viikon datan volyymia varten
+
+          // Fetch data from the last week for volume calculation
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          sevenDaysAgo.setHours(0, 0, 0, 0); // nollaa aika
+          sevenDaysAgo.setHours(0, 0, 0, 0); // Reset time
           const sevenDaysAgoTimestamp = Timestamp.fromDate(sevenDaysAgo);
-      
-          const exercisesRef = collection(db, "exercises");
+
+          const workoutsRef = collection(db, "workouts");
           const q = query(
-            exercisesRef,
+            workoutsRef,
             where("userId", "==", userId),
-            where("createdAt", ">=", threeMonthsAgoTimestamp)
+            where("completed", "==", true) // Fetch only completed workouts
           );
-      
+
           const querySnapshot = await getDocs(q);
           let totalVolume = 0;
           let workoutSessions = new Set();
           const markedDates = {};
           const exerciseDates = [];
-      
+
           querySnapshot.forEach((doc) => {
-            const { sets, reps, weight, createdAt } = doc.data();
-            const exerciseDate = createdAt.toDate();
-            const dateString = exerciseDate.toLocaleDateString("en-CA");
-            
-            // laskee volyymin viimeisen viikon ajalta
-            if (exerciseDate >= sevenDaysAgo) {
-              totalVolume += (Number(sets) || 0) * (Number(reps) || 0) * (Number(weight) || 0);
+            const { exercises, completionDates } = doc.data();
+
+            // Process each date in the completionDates array
+            if (completionDates && Array.isArray(completionDates)) {
+              completionDates.forEach((dateString) => {
+                const workoutDate = new Date(dateString);
+                const normalizedDate = workoutDate.toLocaleDateString("en-CA");
+
+                // Mark the date for the calendar
+                markedDates[normalizedDate] = true;
+                exerciseDates.push(normalizedDate);
+
+                // Calculate volume for the last week
+                if (workoutDate >= sevenDaysAgo) {
+                  exercises.forEach((exercise) => {
+                    totalVolume +=
+                      (Number(exercise.sets) || 0) *
+                      (Number(exercise.reps) || 0) *
+                      (Number(exercise.weight) || 0);
+                  });
+                }
+
+                // Add the date to the workout sessions
+                workoutSessions.add(normalizedDate);
+              });
             }
-            
-            // 3 kuukauden datan käsittely
-            workoutSessions.add(dateString);
-            markedDates[dateString] = true;
-            exerciseDates.push(exerciseDate);
           });
-      
-          // laskee peräkkäiset treenipäivät
+
+          // Calculate streak
           const streakCount = calculateStreak(exerciseDates);
-      
+
           setCurrentStreak(streakCount);
           setExerciseDates(markedDates);
           setVolumeLifted(totalVolume);
@@ -239,8 +252,8 @@ const ProgressScreen = () => {
           setLoading(false);
         }
       };
-      
-      // hakee käyttäjän dataa esim, users collectionista
+
+      // Fetch user stats (e.g., calories burned, weight)
       const fetchUserStats = async () => {
         try {
           const userStatsRef = doc(db, "users", userId);
@@ -248,7 +261,7 @@ const ProgressScreen = () => {
 
           if (userStatsSnap.exists()) {
             const { caloriesBurned, weight } = userStatsSnap.data();
-            setCaloriesBurned(caloriesBurned || "-"); // jos kyseistä dataa ei ole, tietokanta antaa - 
+            setCaloriesBurned(caloriesBurned || "-"); // Default to "-" if no data
             setBodyWeight(weight);
           } else {
             setCaloriesBurned("-");
@@ -259,7 +272,7 @@ const ProgressScreen = () => {
         }
       };
 
-      fetchExerciseData();
+      fetchWorkoutData();
       fetchUserStats();
     }, [userId])
   );

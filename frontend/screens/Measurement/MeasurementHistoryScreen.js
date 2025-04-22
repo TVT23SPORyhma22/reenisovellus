@@ -112,21 +112,60 @@ export default function MeasurementHistoryScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  headerContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  backButton: { marginRight: 12 },
-  header: { fontSize: 22, fontWeight: 'bold' },
-  itemContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
-  indexCircle: {
-    width: 34, height: 34, borderRadius: 17, backgroundColor: '#D3C3BD',
-    justifyContent: 'center', alignItems: 'center', marginRight: 12
+  container: { 
+    flex: 1, 
+    padding: 20, 
+    backgroundColor: '#fff' 
   },
-  indexText: { color: '#fff', fontWeight: 'bold' },
-  title: { fontSize: 16, fontWeight: '600', color: '#5E4740' },
-  subtitle: { fontSize: 14, color: '#aaa' },
+  headerContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 20, 
+    marginTop: 40
+  },
+  backButton: { 
+    marginRight: 12 
+  },
+  header: { 
+    fontSize: 22, 
+    fontWeight: 'bold' 
+  },
+  itemContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 18 
+  },
+  indexCircle: {
+    width: 34, 
+    height: 34, 
+    borderRadius: 17, 
+    backgroundColor: '#D3C3BD',
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: 12
+  },
+  indexText: { 
+    color: '#fff', 
+    fontWeight: 'bold' 
+  },
+  title: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    color: '#5E4740' 
+  },
+  subtitle: { 
+    fontSize: 14, 
+    color: '#aaa' 
+  },
   addButton: {
-    position: 'absolute', top: 20, right: 20,
-    backgroundColor: '#f5f5f5', width: 36, height: 36,
-    borderRadius: 18, justifyContent: 'center', alignItems: 'center'
+    position: 'absolute', 
+    top: 55,
+    right: 20,
+    backgroundColor: '#f5f5f5', 
+    width: 36, 
+    height: 36,
+    borderRadius: 18, 
+    justifyContent: 'center', 
+    alignItems: 'center'
   }
 });

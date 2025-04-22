@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { db, auth } from "../backend/config"; 
-import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore"; 
+import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, arrayUnion } from "firebase/firestore"; 
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -9,7 +9,7 @@ const MyPlanScreen = () => {
   const navigation = useNavigation();
   const [workouts, setWorkouts] = useState([]);
 
-  // Загружаем тренировки пользователя
+  // Load user workouts
   useEffect(() => {
     const loadWorkouts = async () => {
       try {
@@ -40,24 +40,37 @@ const MyPlanScreen = () => {
     loadWorkouts();
   }, []);
 
-  // Обработка старта тренировки
+  // Handle starting a workout
   const handleStartWorkout = async (workoutId) => {
     try {
       const workoutRef = doc(db, "workouts", workoutId);
+      const currentDate = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
+  
+      // Append the current date to the completionDates array
       await updateDoc(workoutRef, {
         completed: true,
-        completedAt: new Date(),
+        completionDates: arrayUnion(currentDate), // Add the current date to the array
       });
-
-      Alert.alert("Success", "Workout started and added to calendar.");
-      navigation.navigate("Progress"); // Переход к странице Progress
+  
+      Alert.alert("Success", "Workout added to calendar for today.");
+      navigation.navigate("Progress"); // Navigate to the Progress screen
     } catch (error) {
       console.error("Error starting workout:", error);
       Alert.alert("Error", "Failed to start workout.");
     }
   };
 
-  // Удаление тренировки
+  const toggleFavorite = async (workoutId) => {
+    try {
+      await updateDoc(doc(db, "workouts", workoutId), {
+        favorite: true, // Set favorite to true
+      });
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
+  };
+
+  // Delete a workout
   const deleteWorkout = async (workoutId) => {
     try {
       await deleteDoc(doc(db, "workouts", workoutId));
@@ -68,7 +81,7 @@ const MyPlanScreen = () => {
     }
   };
 
-  // Подтверждение удаления тренировки
+  // Confirm workout deletion
   const handleLongPress = (workoutId) => {
     Alert.alert(
       "Delete Workout",
@@ -80,14 +93,19 @@ const MyPlanScreen = () => {
     );
   };
 
-  // Рендерим тренировку
+  // Render a workout
   const renderWorkout = ({ item }) => (
     <TouchableOpacity
       style={styles.workoutItem}
-      onPress={() => navigation.navigate("HomeScreen", { workout: item })} // Передаем workout как параметр
+      onPress={() => navigation.navigate("HomeScreen", { workout: item })} // Pass workout as a parameter
       onLongPress={() => handleLongPress(item.id)}
     >
+      <View style={styles.workoutHeader}>
       <Text style={styles.workoutName}>{item.workoutName}</Text>
+      <TouchableOpacity onPress={() => toggleFavorite(item.id)}>
+        <Ionicons name="heart-outline" size={24} color="#A0716C" />
+      </TouchableOpacity>
+      </View>
       <Text style={styles.exerciseNames}>
         {item.exercises.map((exercise) => exercise.name).join(", ")}
       </Text>
@@ -120,6 +138,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  workoutHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   header: {
     flexDirection: "row",

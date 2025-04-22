@@ -63,7 +63,7 @@ const HomeScreen2 = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 40, // Чтобы шапка не перекрывала статус-бар
+    paddingTop: 40,
   },
   header: {
     flexDirection: "row",

@@ -20,10 +20,10 @@ const ProfileScreen = () => {
           setUser(parsedUser);
           setProfilePhoto(parsedUser.photoURL);
         } else {
-          navigation.replace("Login");
+          navigation.replace("Login"); // Redirect to login if no user is found
         }
       } catch (error) {
-        console.error("Error loading user from AsyncStorage:", error);  // Обработка ошибок
+        console.error("Error loading user from AsyncStorage:", error); // Handle errors
       }
     };
     loadUser();
@@ -67,8 +67,8 @@ const ProfileScreen = () => {
     }
 
     if (!result.canceled) {
-      setProfilePhoto(result.assets[0].uri);
-      savePhotoToStorage(result.assets[0].uri);
+      setProfilePhoto(result.assets[0].uri); // Update profile photo in state
+      savePhotoToStorage(result.assets[0].uri); // Save photo to AsyncStorage
     }
   };
 
@@ -76,8 +76,8 @@ const ProfileScreen = () => {
     if (user) {
       const updatedUser = { ...user, photoURL: photoUri };
       console.log("Saving photo to storage:", updatedUser);  
-      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser)); // Save updated user to AsyncStorage
+      setUser(updatedUser); // Update user state
     }
   };
 

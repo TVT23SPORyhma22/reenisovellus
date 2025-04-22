@@ -101,7 +101,7 @@ export default function AddMeasurement({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, marginTop: 40 },
   dateButton: {
     backgroundColor: '#EEE1DC', padding: 12, borderRadius: 10, marginBottom: 20
   },

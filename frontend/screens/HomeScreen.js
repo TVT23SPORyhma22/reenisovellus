@@ -85,13 +85,14 @@ const HomeScreen = () => {
       alert("You must be logged in to save a workout.");
       return;
     }
-
-    try {
+      try {
       await addDoc(collection(db, "workouts"), {
         userId: user.uid,
-        workoutName: `Workout-${new Date().toLocaleDateString()}-${new Date().getTime()}`,
+        workoutName: `Workout-${new Date().toLocaleDateString()}`,
         exercises: exerciseList,
         createdAt: new Date(),
+        completed: false,
+        favorite: false,
       });
 
       console.log("Workout saved successfully!");

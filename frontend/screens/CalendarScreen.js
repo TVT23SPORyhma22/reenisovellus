@@ -11,6 +11,7 @@ export default function CalendarScreen() {
   const [allWorkouts, setAllWorkouts] = useState([]); // Store all workouts
   const [filteredWorkouts, setFilteredWorkouts] = useState([]); // Store workouts for the selected date
   const [loading, setLoading] = useState(false);
+  const [markedDates, setMarkedDates] = useState({}); // Store marked dates
   const { currentUser } = auth;
 
   useFocusEffect(
@@ -23,8 +24,11 @@ export default function CalendarScreen() {
     // Filter workouts when a date is selected
     if (selectedDate) {
       const filtered = allWorkouts.filter((workout) => {
-        const workoutDate = new Date(workout.createdAt.seconds * 1000).toISOString().split("T")[0];
-        return workoutDate === selectedDate;
+        // Check if the selected date exists in the completionDates array
+        return (
+          workout.completionDates &&
+          workout.completionDates.includes(selectedDate)
+        );
       });
       setFilteredWorkouts(filtered);
     }
@@ -34,15 +38,28 @@ export default function CalendarScreen() {
     setLoading(true);
     try {
       const q = query(
-        collection(db, "workouts"), // Ensure you're querying the correct collection
-        where("userId", "==", currentUser.uid)
+        collection(db, "workouts"),
+        where("userId", "==", currentUser.uid),
+        where("completed", "==", true) // Fetch only completed workouts
       );
       const querySnapshot = await getDocs(q);
       const workouts = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
       setAllWorkouts(workouts);
+
+      // Mark all completion dates in the calendar
+      const dates = {};
+      workouts.forEach((workout) => {
+        if (workout.completionDates && Array.isArray(workout.completionDates)) {
+          workout.completionDates.forEach((date) => {
+            dates[date] = { marked: true, dotColor: "blue" };
+          });
+        }
+      });
+      setMarkedDates(dates);
     } catch (error) {
       console.error("Error fetching workouts:", error);
     }
@@ -55,12 +72,14 @@ export default function CalendarScreen() {
       <Calendar
         onDayPress={(day) => setSelectedDate(day.dateString)}
         markedDates={{
+          ...markedDates,
           [selectedDate]: { selected: true, selectedColor: "tomato" },
         }}
         theme={{
           todayTextColor: "red",
           arrowColor: "tomato",
         }}
+        firstDay={1} // Monday as the first day of the week
       />
 
       {/* Show exercises for selected day */}
