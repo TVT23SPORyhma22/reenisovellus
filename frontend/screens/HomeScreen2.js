@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Entypo } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import HomeScreenNavigator from "../navigation/HomeScreenNavigator";
+import { LogBox } from 'react-native';
+
 
 const HomeScreen2 = ({ navigation }) => {
   const [user, setUser] = useState(null);
@@ -25,6 +27,11 @@ const HomeScreen2 = ({ navigation }) => {
     setUser(null);
     navigation.replace("Login");
   };
+  useEffect(() => {
+    LogBox.ignoreLogs([
+      'VirtualizedLists should never be nested', 
+    ]);
+  }, []);
 
   return (
     <View style={styles.container}>
