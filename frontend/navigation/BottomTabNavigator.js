@@ -1,10 +1,11 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import HomeScreen from "../screens/HomeScreen";
+import HomeScreen from "../screens/HomeScreen2";
 import CalendarScreen from "../screens/CalendarScreen";
 import FavoritesScreen from "../screens/FavoritesScreen";
 import MapScreen from "../screens/MapScreen";
+import ProgressScreen from "../screens/ProgressScreen"
 import { Text } from "react-native";
 
 const Tab = createBottomTabNavigator();
@@ -21,6 +22,7 @@ export default function BottomTabNavigator() {
           else if (route.name === "Calendar") iconName = "calendar";
           else if (route.name === "Favorites") iconName = "heart";
           else if (route.name === "Map") iconName = "map";
+          else if (route.name === "Progress") iconName = "stats-chart-outline"; 
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -32,6 +34,7 @@ export default function BottomTabNavigator() {
       <Tab.Screen name="Calendar" component={CalendarScreen} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} />
       <Tab.Screen name="Map" component={MapScreen} />
+      <Tab.Screen name="Progress" component={ProgressScreen}  options={{ headerTitle: "Progress" }} />
     </Tab.Navigator>
   );
 }

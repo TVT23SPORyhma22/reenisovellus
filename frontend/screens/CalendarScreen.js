@@ -1,42 +1,110 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Calendar } from "react-native-calendars";
-
-// Data example
-const workoutData = {
-  "2025-03-18": "Penkkipunnerrus 4x6-8 70kg, Vinopenkki 4x8-10 15kg",
-  "2025-03-19": "Leuanveto 4x6-8, Kulmasoutu 4x8-10 50kg",
-  "2025-03-20": "Vinopenkki tanko 4x6-8 40kg, Dipit 3x10-12",
-  "2025-03-21": "T-soutu 4x8-10, Kapea ylätalja 3x10-12 50kg",
-};
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../backend/config";
+import { auth } from "../backend/config";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState("");
-  
+  const [allWorkouts, setAllWorkouts] = useState([]); // Store all workouts
+  const [filteredWorkouts, setFilteredWorkouts] = useState([]); // Store workouts for the selected date
+  const [loading, setLoading] = useState(false);
+  const [markedDates, setMarkedDates] = useState({}); // Store marked dates
+  const { currentUser } = auth;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchAllWorkouts();
+    }, [])
+  );
+
+  useEffect(() => {
+    // Filter workouts when a date is selected
+    if (selectedDate) {
+      const filtered = allWorkouts.filter((workout) => {
+        // Check if the selected date exists in the completionDates array
+        return (
+          workout.completionDates &&
+          workout.completionDates.includes(selectedDate)
+        );
+      });
+      setFilteredWorkouts(filtered);
+    }
+  }, [selectedDate, allWorkouts]);
+
+  async function fetchAllWorkouts() {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, "workouts"),
+        where("userId", "==", currentUser.uid),
+        where("completed", "==", true) // Fetch only completed workouts
+      );
+      const querySnapshot = await getDocs(q);
+      const workouts = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setAllWorkouts(workouts);
+
+      // Mark all completion dates in the calendar
+      const dates = {};
+      workouts.forEach((workout) => {
+        if (workout.completionDates && Array.isArray(workout.completionDates)) {
+          workout.completionDates.forEach((date) => {
+            dates[date] = { marked: true, dotColor: "blue" };
+          });
+        }
+      });
+      setMarkedDates(dates);
+    } catch (error) {
+      console.error("Error fetching workouts:", error);
+    }
+    setLoading(false);
+  }
+
   return (
     <View style={styles.container}>
       {/* Calendar */}
       <Calendar
         onDayPress={(day) => setSelectedDate(day.dateString)}
         markedDates={{
+          ...markedDates,
           [selectedDate]: { selected: true, selectedColor: "tomato" },
         }}
         theme={{
           todayTextColor: "red",
           arrowColor: "tomato",
         }}
+        firstDay={1} // Monday as the first day of the week
       />
 
-      {/* Show exercise for selected day */}
+      {/* Show exercises for selected day */}
       <View style={styles.workoutContainer}>
         <Text style={styles.dateText}>
-          {selectedDate ? `Exercise ${selectedDate}:` : "Pick a date"}
+          {selectedDate ? `Workouts on ${selectedDate}:` : "Pick a date"}
         </Text>
-        <Text style={styles.workoutText}>
-          {selectedDate && workoutData[selectedDate]
-            ? workoutData[selectedDate]
-            : "No data"}
-        </Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="tomato" />
+        ) : filteredWorkouts.length > 0 ? (
+          filteredWorkouts.map((workout, index) => (
+            <View key={index} style={styles.workoutItem}>
+              <Text style={styles.workoutText}>
+                {workout.workoutName || "Unnamed Workout"}
+              </Text>
+              {workout.exercises.map((exercise, i) => (
+                <Text key={i} style={styles.exerciseText}>
+                  {exercise.name} - {exercise.sets}x{exercise.reps} {exercise.weight}kg
+                </Text>
+              ))}
+            </View>
+          ))
+        ) : (
+          <Text style={styles.workoutText}>No workouts for this date</Text>
+        )}
       </View>
     </View>
   );
@@ -60,7 +128,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 5,
   },
+  workoutItem: {
+    marginBottom: 10,
+    alignItems: "center",
+  },
   workoutText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  exerciseText: {
     fontSize: 14,
     textAlign: "center",
   },

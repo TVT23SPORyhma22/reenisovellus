@@ -1,15 +1,28 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Button, StyleSheet,} from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Button, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { auth } from "../backend/config"; 
+import { auth } from "../backend/config";
 import { signOut } from "firebase/auth";
+import { fetchExerciseTranslations } from "../components/translations";
+import ExercisePicker from "../components/ExercisePicker";
+import ExercisesList from "../components/ExercisesList";
+import { useNavigation } from "@react-navigation/native";
+import { Entypo } from "@expo/vector-icons";
+import { db } from "../backend/config"; 
+import { collection, addDoc } from "firebase/firestore"; 
+import { Picker } from '@react-native-picker/picker'; 
 
-import ExerciseForm from "../components/ExerciseForm";
-import ExerciseList from "../components/ExerciseList";
-
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = () => {
+  const navigation = useNavigation();
   const [user, setUser] = useState(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [exerciseData, setExerciseData] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [exerciseTranslations, setExerciseTranslations] = useState({});
+  const [exerciseList, setExerciseList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -17,58 +30,157 @@ const HomeScreen = ({ navigation }) => {
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       } else {
-        navigation.replace("Login");
+        setUser(null);
       }
     };
     loadUser();
   }, []);
 
-  // uloskirjautuminen
-  const handleLogout = async () => {
-    await signOut(auth);
-    await AsyncStorage.removeItem("user");
-    navigation.replace("Login");
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const categoryResponse = await fetch("https://wger.de/api/v2/exercisecategory/");
+        const categoryData = await categoryResponse.json();
+        setCategories(categoryData.results);
+
+        if (selectedCategory) {
+          const exerciseResponse = await fetch(
+            `https://wger.de/api/v2/exercise/?category=${selectedCategory}&language=2&limit=100`
+          );
+          const exerciseData = await exerciseResponse.json();
+          setExerciseData(exerciseData.results);
+        }
+
+        setExerciseTranslations(await fetchExerciseTranslations(2)); 
+      } catch (error) {
+        setError("Failed to load data.");
+      }
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [selectedCategory]);
+
+
+  const addExerciseToList = (exerciseId, name, sets, reps, weight) => {
+    const newExercise = {
+      id: `${exerciseId}-${new Date().getTime()}`, // Unique ID
+      exerciseId,
+      name,
+      sets,
+      reps,
+      weight,
+    };
+
+    setExerciseList((prevList) => [...prevList, newExercise]);
   };
 
-  // päivittää harjoituslistaan uuden
-  const handleExerciseAdded = () => {
-    setRefreshTrigger(prev => prev + 1);
+  const deleteExercises = (selectedExerciseIds) => {
+    setExerciseList(exerciseList.filter((ex) => !selectedExerciseIds.includes(ex.id)));
   };
 
+  const saveWorkoutPlan = async () => {
+    if (!user) {
+      alert("You must be logged in to save a workout.");
+      return;
+    }
+      try {
+      await addDoc(collection(db, "workouts"), {
+        userId: user.uid,
+        workoutName: `Workout-${new Date().toLocaleDateString()}`,
+        exercises: exerciseList,
+        createdAt: new Date(),
+        completed: false,
+        favorite: false,
+      });
+
+      console.log("Workout saved successfully!");
+      navigation.navigate("Main");
+    } catch (error) {
+      console.error("Error saving workout plan:", error);
+      alert("Failed to save workout plan.");
+    }
+  };
+
+  if (loading) return <LoadingScreen />;
+  if (error) return <ErrorScreen message={error} />;
 
   return (
-<View style={styles.container}>
-    <View style={styles.header}>
-      <Text style={styles.welcomeText}>Welcome, {user?.email}</Text>
-      <Button title="Logout" onPress={handleLogout} />
-    </View>
-      {user && (
+    <ScrollView style={styles.container}>
+      {user ? (
         <>
-          <ExerciseForm 
-            userId={user.uid} 
-            onExerciseAdded={handleExerciseAdded} 
-          />
-          <View style={styles.listContainer}>
-            <ExerciseList 
-              userId={user.uid} 
-              key={refreshTrigger} 
-            />
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Entypo name="chevron-left" size={30} color="black" />
+            </TouchableOpacity>
           </View>
-        </>
+
+          <View style={styles.formBox}>
+            <Picker
+              selectedValue={selectedCategory}
+              onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+              style={styles.picker}
+            >
+              <Picker.Item label="-- Select Category --" value="" />
+              {categories.map((category) => (
+                <Picker.Item key={category.id} label={category.name} value={category.id.toString()} />
+              ))}
+            </Picker>
+
+           <ExercisePicker
+             exercises={exerciseData}
+             translations={exerciseTranslations}
+             onAdd={addExerciseToList}
+           />
+         </View>
+
+         <View style={styles.exerciseListContainer}>
+           <ExercisesList
+             exercises={exerciseList} // Pass the added exercises
+             translations={exerciseTranslations}
+             addedExercises={exerciseList} // Pass the added exercises to display in real-time
+             onDelete={(ids) => setExerciseList((prev) => prev.filter((ex) => !ids.includes(ex.id)))} // Handle deletion
+           />
+         </View>
+
+         <TouchableOpacity style={styles.saveButton} onPress={saveWorkoutPlan}>
+           <Text style={styles.saveButtonText}>Save & Go Back to Main</Text>
+         </TouchableOpacity>
+       </>
+     ) : (
+       <View style={styles.centeredContainer}>
+         <Text style={styles.infoText}>Please log in to see your profile and exercises.</Text>
+         <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
+           <Text style={styles.loginButtonText}>Go to Login</Text>
+         </TouchableOpacity>
+         </View>
       )}
-    
-    </View>
+    </ScrollView>
   );
 };
+
+const LoadingScreen = () => (
+  <View style={styles.center}>
+    <ActivityIndicator size="large" color="#3498db" />
+    <Text style={styles.loadingText}>Loading exercises...</Text>
+  </View>
+);
+
+const ErrorScreen = ({ message }) => (
+  <View style={styles.center}>
+    <Text style={styles.errorText}>{message}</Text>
+  </View>
+);
 
 const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    width: "100%", 
-    paddingHorizontal: 10, 
-    marginBottom: 10, 
+    width: "100%",
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
   container: {
     flex: 1,
@@ -78,15 +190,93 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 18,
     fontWeight: "bold",
+  },
+  formBox: {
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 20,
     marginBottom: 20,
   },
-  listContainer: {
-    flex: 1,
+  picker: {
+    height: 50,
+    marginBottom: 10,
   },
-  logoutContainer: {
+  profilePhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  menu: {
+    position: "absolute",
+    top: 75,
+    right: 10,
+    backgroundColor: "white",
+    padding: 10,
+    borderRadius: 5,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    width: 150,
+    zIndex: 10,
+  },
+  menuButton: {
+    padding: 10,
+  },
+  menuText: {
+    fontSize: 16,
+    color: "black",
+  },
+  centeredContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 18,
+    color: "#3498db",
     marginTop: 10,
+  },
+  errorText: {
+    fontSize: 18,
+    color: "red",
+    marginTop: 10,
+  },
+  exerciseListContainer: {
+    marginTop: 20,
+    paddingBottom: 60,
+  },
+  infoText: {
+    fontSize: 16,
+    color: "gray",
+    marginBottom: 20,
+  },
+  loginButton: {
+    backgroundColor: "#A0716C",
     paddingVertical: 10,
-  }
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  loginButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  saveButton: {
+    backgroundColor: "#A0716C",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginBottom: 60,
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 });
 
 export default HomeScreen;
